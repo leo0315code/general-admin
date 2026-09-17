@@ -1,0 +1,98 @@
+@import 'tailwindcss';
+
+/*
+ * 项目级暗色模式（不依赖 prefers-color-scheme）：
+ * 通过在 <html> 上切换 .dark 类来控制全局暗色样式。
+ * Tailwind v4 通过 @custom-variant 将 dark: 变体绑定到 .dark 选择器。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* Alpine.js：初始隐藏标记（避免元素闪烁） */
+[x-cloak] {
+    display: none;
+}
+
+/*
+ * 通用后台组件类（现代化风格）：
+ * 卡片、按钮、表单、表格统一在此定义，业务视图直接复用，保证整体一致性。
+ */
+@layer components {
+    /* 内容卡片 */
+    .card {
+        @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+    }
+
+    /* 卡片标题栏 */
+    .card-header {
+        @apply px-5 py-4 border-b border-gray-200 dark:border-gray-700;
+    }
+
+    /* 主按钮 */
+    .btn-primary {
+        @apply inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-medium rounded-lg transition shadow-sm;
+    }
+
+    /* 次按钮（浅色） */
+    .btn-secondary {
+        @apply inline-flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg transition;
+    }
+
+    /* 危险图标按钮（幽灵） */
+    .btn-danger-ghost {
+        @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition;
+    }
+
+    /* 主图标按钮（幽灵） */
+    .btn-ghost {
+        @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition;
+    }
+
+    /* 表单标签 */
+    .label {
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1.5;
+    }
+
+    /* 表单输入（现代风格：柔和底色、大圆角、聚焦光环、placeholder 颜色）
+       亮色：gray-50 底 + 浅边框 + 聚焦白底与 indigo 光环
+       暗色：gray-700 实色底（与 gray-800 卡片区分），聚焦提亮 + 光环 */
+    .input {
+        @apply block w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition duration-150 ease-in-out;
+        @apply hover:border-gray-400 dark:hover:border-gray-500;
+        @apply focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-indigo-500/25;
+    }
+
+    /* 表格头 */
+    .th {
+        @apply px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400;
+    }
+
+    /* 表格单元格 */
+    .td {
+        @apply px-5 py-3 text-sm;
+    }
+
+    /* 统计卡片 */
+    .stat-card {
+        @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5 flex items-start gap-4;
+    }
+}
+
+/* 细滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+}
