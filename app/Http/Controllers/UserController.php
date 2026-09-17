@@ -8,6 +8,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Imports\UsersImport;
 use App\Models\User;
+use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,10 +27,15 @@ class UserController extends Controller
     /** 每页显示数量 */
     protected const PER_PAGE = 15;
 
-    /** 用户列表：分页 + 关键字搜索（姓名/邮箱） */
+    /** 用户列表：分页 + 关键字搜索（姓名/邮箱）+ 每页条数/排序（ListQuery 白名单） */
     public function index(Request $request): View
     {
         $keyword = $request->query('search');
+
+        [$perPage, $sort, $dir] = ListQuery::resolve(
+            $request,
+            ['id', 'name', 'email', 'status', 'created_at', 'last_login_at']
+        );
 
         $users = User::query()
             ->with('roles:id,name')
@@ -39,13 +45,17 @@ class UserController extends Controller
                         ->orWhere('email', 'like', "%{$keyword}%");
                 });
             })
-            ->latest()
-            ->paginate(config('app.pagination', self::PER_PAGE))
+            ->when(
+                $sort,
+                fn ($query) => $query->orderBy($sort, $dir),
+                fn ($query) => $query->latest()
+            )
+            ->paginate($perPage)
             ->withQueryString();
 
         $trashedCount = User::query()->onlyTrashed()->count();
 
-        return view('users.index', compact('users', 'keyword', 'trashedCount'));
+        return view('users.index', compact('users', 'keyword', 'trashedCount', 'sort', 'dir'));
     }
 
     /** 创建用户表单 */
@@ -92,6 +102,16 @@ class UserController extends Controller
     {
         Gate::authorize('users.update');
 
+        // 最后 admin 保护：不得通过编辑移除其 admin 角色
+        $roleNames = Role::query()
+            ->whereIn('id', $request->validated('roles', []))
+            ->pluck('name');
+
+        if ($this->isLastActiveAdmin($user) && ! $roleNames->contains(User::ROLE_ADMIN)) {
+            return back()
+                ->with('error', "「{$user->name}」是最后一个启用的管理员，不能移除其 admin 角色。");
+        }
+
         $data = $request->safe()->only(['name', 'email']);
 
         // 仅在填写新密码时更新密码
@@ -131,13 +151,18 @@ class UserController extends Controller
             ->with('success', "用户「{$user->name}」的密码已重置，下次登录需修改密码。");
     }
 
-    /** 切换账号启停状态（禁止停用自己） */
+    /** 切换账号启停状态（禁止停用自己；最后一个启用 admin 不可停用） */
     public function toggleStatus(User $user): RedirectResponse
     {
         Gate::authorize('user.manage');
 
         if ($user->is(auth()->user())) {
             return back()->with('error', '不能停用当前登录的账号。');
+        }
+
+        if ($user->isActive() && $this->isLastActiveAdmin($user)) {
+            return back()
+                ->with('error', "「{$user->name}」是最后一个启用的管理员，不能停用。");
         }
 
         $user->update(['status' => ! $user->isActive()]);
@@ -148,7 +173,7 @@ class UserController extends Controller
                 : "用户「{$user->name}」已停用，将无法登录。");
     }
 
-    /** 删除用户（软删除；禁止删除自己） */
+    /** 删除用户（软删除；禁止删除自己；最后一个启用 admin 不可删除） */
     public function destroy(User $user): RedirectResponse
     {
         Gate::authorize('users.destroy');
@@ -159,6 +184,12 @@ class UserController extends Controller
                 ->with('error', '不能删除当前登录的账号。');
         }
 
+        if ($this->isLastActiveAdmin($user)) {
+            return redirect()
+                ->route('users.index')
+                ->with('error', "「{$user->name}」是最后一个启用的管理员，不能删除。");
+        }
+
         $user->delete();
 
         return redirect()
@@ -166,10 +197,110 @@ class UserController extends Controller
             ->with('success', "用户「{$user->name}」已删除（软删除）。");
     }
 
-    /** 回收站：已删除用户列表（分页 + 搜索） */
+    /** 批量删除用户（软删除；跳过自己与最后一个启用的 admin） */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        Gate::authorize('user.manage');
+
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach ($this->validatedIds($request) as $id) {
+            $user = User::query()->find($id);
+
+            if (! $user) {
+                continue;
+            }
+
+            if ($user->is(auth()->user()) || $this->isLastActiveAdmin($user)) {
+                $skipped++;
+
+                continue;
+            }
+
+            $user->delete();
+            $deleted++;
+        }
+
+        $message = "已删除 {$deleted} 个用户。";
+
+        if ($skipped > 0) {
+            $message .= " 跳过 {$skipped} 个受限项（自己或最后一个启用的管理员）。";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /** 批量切换账号启停状态（跳过自己与最后一个启用的 admin） */
+    public function bulkToggleStatus(Request $request): RedirectResponse
+    {
+        Gate::authorize('user.manage');
+
+        $changed = 0;
+        $skipped = 0;
+
+        foreach ($this->validatedIds($request) as $id) {
+            $user = User::query()->find($id);
+
+            if (! $user) {
+                continue;
+            }
+
+            if ($user->is(auth()->user())) {
+                $skipped++;
+
+                continue;
+            }
+
+            if ($user->isActive() && $this->isLastActiveAdmin($user)) {
+                $skipped++;
+
+                continue;
+            }
+
+            $user->update(['status' => ! $user->isActive()]);
+            $changed++;
+        }
+
+        $message = "已更新 {$changed} 个用户的状态。";
+
+        if ($skipped > 0) {
+            $message .= " 跳过 {$skipped} 个受限项（自己或最后一个启用的管理员）。";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * 批量操作 ID 白名单清洗：仅保留正整数，去重。
+     *
+     * @return list<int>
+     */
+    protected function validatedIds(Request $request): array
+    {
+        $ids = $request->input('ids', []);
+
+        if (! is_array($ids)) {
+            return [];
+        }
+
+        return collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** 回收站：已删除用户列表（分页 + 搜索 + 每页条数/排序） */
     public function trash(Request $request): View
     {
         $keyword = $request->query('search');
+
+        [$perPage, $sort, $dir] = ListQuery::resolve(
+            $request,
+            ['id', 'name', 'email', 'status', 'created_at', 'last_login_at']
+        );
 
         $users = User::query()
             ->onlyTrashed()
@@ -180,11 +311,15 @@ class UserController extends Controller
                         ->orWhere('email', 'like', "%{$keyword}%");
                 });
             })
-            ->latest('id')
-            ->paginate(config('app.pagination', self::PER_PAGE))
+            ->when(
+                $sort,
+                fn ($query) => $query->orderBy($sort, $dir),
+                fn ($query) => $query->latest('id')
+            )
+            ->paginate($perPage)
             ->withQueryString();
 
-        return view('users.trash', compact('users', 'keyword'));
+        return view('users.trash', compact('users', 'keyword', 'sort', 'dir'));
     }
 
     /** 还原软删除用户 */
@@ -260,5 +395,23 @@ class UserController extends Controller
         return back()
             ->with('success', $message)
             ->with('import_errors', $errors);
+    }
+
+    /**
+     * 是否为「最后一个启用的管理员」。
+     *
+     * 用于保护：最后一个可登录的 admin 不允许被删除、停用或移除 admin 角色，
+     * 避免系统进入无人可管理的状态。
+     */
+    protected function isLastActiveAdmin(User $user): bool
+    {
+        if (! $user->isAdmin() || ! $user->isActive()) {
+            return false;
+        }
+
+        return User::query()
+            ->role(User::ROLE_ADMIN)
+            ->where('status', 1)
+            ->count() <= 1;
     }
 }

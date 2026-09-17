@@ -6,7 +6,9 @@ use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Models\Menu;
 use App\Models\User;
+use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -19,15 +21,25 @@ use Spatie\Permission\Models\Role;
  */
 class RoleController extends Controller
 {
-    /** 角色列表：含权限数量与用户数量 */
-    public function index(): View
+    /** 角色列表：含权限数量与用户数量 + 每页条数/排序 */
+    public function index(Request $request): View
     {
+        [$perPage, $sort, $dir] = ListQuery::resolve(
+            $request,
+            ['id', 'name', 'created_at']
+        );
+
         $roles = Role::query()
             ->withCount(['permissions', 'users'])
-            ->orderBy('id')
-            ->paginate(config('app.pagination', 15));
+            ->when(
+                $sort,
+                fn ($query) => $query->orderBy($sort, $dir),
+                fn ($query) => $query->orderBy('id')
+            )
+            ->paginate($perPage)
+            ->withQueryString();
 
-        return view('roles.index', compact('roles'));
+        return view('roles.index', compact('roles', 'sort', 'dir'));
     }
 
     /** 创建角色表单（带权限树复选框） */

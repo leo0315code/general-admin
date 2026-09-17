@@ -1,11 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">新建用户</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">创建系统用户并分配角色</p>
-            </div>
-        </div>
+        <x-page-header title="新建用户" description="创建系统用户并分配角色" />
     </x-slot>
 
     <div class="card max-w-2xl">
@@ -13,36 +8,27 @@
             @csrf
 
             {{-- 姓名 --}}
-            <div>
-                <label class="label" for="name">姓名</label>
-                <input id="name" name="name" type="text" class="input" value="{{ old('name') }}" placeholder="请输入姓名" required autofocus>
-                <x-input-error :messages="$errors->get('name')" class="mt-2" />
-            </div>
+            <x-form-field name="name" label="姓名" :required="true">
+                <input id="name" name="name" type="text" class="input @error('name') input-error @enderror" value="{{ old('name') }}" placeholder="请输入姓名" required autofocus>
+            </x-form-field>
 
             {{-- 邮箱 --}}
-            <div>
-                <label class="label" for="email">邮箱</label>
-                <input id="email" name="email" type="email" class="input" value="{{ old('email') }}" placeholder="name@example.com" required>
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
-            </div>
+            <x-form-field name="email" label="邮箱" :required="true">
+                <input id="email" name="email" type="email" class="input @error('email') input-error @enderror" value="{{ old('email') }}" placeholder="name@example.com" required>
+            </x-form-field>
 
             {{-- 密码 --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="label" for="password">密码</label>
-                    <input id="password" name="password" type="password" class="input" required autocomplete="new-password">
-                    <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                </div>
-                <div>
-                    <label class="label" for="password_confirmation">确认密码</label>
-                    <input id="password_confirmation" name="password_confirmation" type="password" class="input" required autocomplete="new-password">
-                </div>
+                <x-form-field name="password" label="密码" :required="true">
+                    <input id="password" name="password" type="password" class="input @error('password') input-error @enderror" required autocomplete="new-password">
+                </x-form-field>
+                <x-form-field name="password_confirmation" label="确认密码" :required="true">
+                    <input id="password_confirmation" name="password_confirmation" type="password" class="input @error('password_confirmation') input-error @enderror" required autocomplete="new-password">
+                </x-form-field>
             </div>
 
             {{-- 角色分配（多选） --}}
-            <div>
-                <label class="label">角色分配</label>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">可多选；用户的权限为所分配角色权限的并集。</p>
+            <x-form-field name="roles" label="角色分配" hint="可多选；用户的权限为所分配角色权限的并集。">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     @foreach ($roles as $role)
                         <label class="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3.5 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
@@ -50,7 +36,7 @@
                                 type="checkbox"
                                 name="roles[]"
                                 value="{{ $role->id }}"
-                                class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                class="rounded border-gray-300 dark:border-gray-600 text-primary-600 shadow-sm focus:ring-primary-500"
                                 @checked(in_array($role->id, old('roles', [])))
                             >
                             <span class="text-sm text-gray-700 dark:text-gray-200">{{ $role->name }}</span>
@@ -60,14 +46,10 @@
                         </label>
                     @endforeach
                 </div>
-                <x-input-error :messages="$errors->get('roles')" class="mt-2" />
-            </div>
+            </x-form-field>
 
             <div class="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-                <button type="submit" class="btn-primary">
-                    <x-icon name="heroicon-o-plus" class="h-4 w-4" />
-                    创建用户
-                </button>
+                <x-submit-button label="创建用户" icon="heroicon-o-plus" />
                 <a href="{{ route('users.index') }}" class="btn-secondary">取消</a>
             </div>
         </form>

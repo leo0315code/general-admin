@@ -1,0 +1,85 @@
+classDiagram
+    direction LR
+
+    %% ===== 服务端支撑 =====
+    class ListQuery {
+        +resolve(Request $request, array $allowedColumns, string $defaultSort = 'id') array
+        +perPage(Request $request) int
+        +sortColumn(Request $request, array $allowed, string $default) string|null
+        +sortDir(Request $request) string
+        -normalizePerPage(mixed $value, int $default) int
+        -normalizeDir(mixed $value) string
+    }
+    class SeedLargeDataset {
+        +handle() int
+        -bulkInsertUsers(int $count) void
+        -bulkInsertPosts(int $count) void
+        -assignRolesToSubset(int $step) void
+    }
+    class SecurityHeaders {
+        +handle(Request $request, Closure $next) Response
+        -applyHeaders(Response $response) void
+    }
+    class OperationLogger {
+        +log(?int $userId, ?string $username, string $method, string $action, string $description, ?string $module, ?string $ip, ?string $userAgent) OperationLog
+        +resolve(Request $request) array
+        -ROUTE_MAP array
+    }
+
+    %% ===== 控制器 =====
+    class UserController {
+        +index(Request $request) View
+        +trash(Request $request) View
+        +bulkDestroy(Request $request) RedirectResponse
+        +bulkToggleStatus(Request $request) RedirectResponse
+        -isLastActiveAdmin(User $user) bool
+    }
+    class PostController {
+        +index(Request $request) View
+        +trash(Request $request) View
+        +bulkDestroy(Request $request) RedirectResponse
+    }
+    class OperationLogController {
+        +index(Request $request) View
+    }
+    class RoleController {
+        +index(Request $request) View
+    }
+    class DictTypeController {
+        +index(Request $request) View
+    }
+    class DictItemController {
+        +index(Request $request) View
+    }
+
+    %% ===== Blade 组件（props 见设计文档 §5 组件设计表） =====
+    class StatusBadge
+    class EmptyState
+    class Skeleton
+    class PageHeader
+    class IconButton
+    class ConfirmModal
+    class DataTable
+    class Pagination
+    class PerPage
+    class BulkActions
+    class FormField
+    class SubmitButton
+    class Toast
+
+    UserController --> ListQuery : uses
+    PostController --> ListQuery : uses
+    OperationLogController --> ListQuery : uses
+    RoleController --> ListQuery : uses
+    DictTypeController --> ListQuery : uses
+    DictItemController --> ListQuery : uses
+    UserController --> OperationLogger : logs
+    PostController --> OperationLogger : logs
+
+    DataTable ..> StatusBadge : renders
+    DataTable ..> EmptyState : renders
+    DataTable ..> Pagination : renders
+    DataTable ..> PerPage : renders
+    DataTable ..> BulkActions : renders
+    FormField ..> SubmitButton : pairs with
+    Toast ..> FlashMessages : feeds

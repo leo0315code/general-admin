@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\OperationLog;
+use App\Support\ListQuery;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * 操作日志控制器：登录审计 + 操作审计列表（分页 + 多条件筛选）
+ * 操作日志控制器：登录审计 + 操作审计列表（分页 + 多条件筛选 + 每页条数/排序）
  */
 class OperationLogController extends Controller
 {
@@ -20,6 +21,11 @@ class OperationLogController extends Controller
         $action = $request->query('action');
         $date = $request->query('date');
 
+        [$perPage, $sort, $dir] = ListQuery::resolve(
+            $request,
+            ['id', 'action', 'ip', 'created_at']
+        );
+
         $logs = OperationLog::query()
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($query) use ($keyword) {
@@ -30,8 +36,12 @@ class OperationLogController extends Controller
             })
             ->when($action, fn ($query, $action) => $query->where('action', $action))
             ->when($date, fn ($query, $date) => $query->whereDate('created_at', $date))
-            ->latest('id')
-            ->paginate(config('app.pagination', self::PER_PAGE))
+            ->when(
+                $sort,
+                fn ($query) => $query->orderBy($sort, $dir),
+                fn ($query) => $query->latest('id')
+            )
+            ->paginate($perPage)
             ->withQueryString();
 
         // 操作类型筛选选项（去重）
@@ -42,6 +52,6 @@ class OperationLogController extends Controller
             ->pluck('action')
             ->all();
 
-        return view('logs.index', compact('logs', 'keyword', 'action', 'date', 'actionOptions'));
+        return view('logs.index', compact('logs', 'keyword', 'action', 'date', 'actionOptions', 'sort', 'dir'));
     }
 }

@@ -12,17 +12,16 @@
         {{-- 会话状态（如重置密码成功提示） --}}
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
-        <form method="POST" action="{{ route('login') }}" class="space-y-5" x-data="{ showPassword: false }">
+        <form method="POST" action="{{ route('login') }}" class="space-y-5" x-data="{ showPassword: false, loading: false }">
             @csrf
 
             {{-- 用户名 / 邮箱 --}}
-            <div>
-                <label class="label" for="username">用户名 / 邮箱</label>
+            <x-form-field name="username" label="用户名 / 邮箱" :required="true">
                 <div class="relative">
                     <x-icon name="heroicon-o-user" class="h-5 w-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     <input
                         id="username"
-                        class="input pl-11"
+                        class="input pl-11 @error('username') input-error @enderror"
                         type="text"
                         name="username"
                         value="{{ old('username') }}"
@@ -32,18 +31,16 @@
                         autocomplete="username"
                     >
                 </div>
-                <x-input-error :messages="$errors->get('username')" class="mt-2" />
-            </div>
+            </x-form-field>
 
             {{-- 密码（支持显示/隐藏切换） --}}
-            <div>
-                <label class="label" for="password">密码</label>
+            <x-form-field name="password" label="密码" :required="true">
                 <div class="relative">
                     <x-icon name="heroicon-o-lock-closed" class="h-5 w-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     <input
                         id="password"
                         x-ref="passwordInput"
-                        class="input pl-11 pr-11"
+                        class="input pl-11 pr-11 @error('password') input-error @enderror"
                         :type="showPassword ? 'text' : 'password'"
                         name="password"
                         placeholder="请输入密码"
@@ -62,18 +59,16 @@
                         <x-icon x-show="showPassword" name="heroicon-o-eye-slash" class="h-5 w-5" x-cloak />
                     </button>
                 </div>
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
-            </div>
+            </x-form-field>
 
             {{-- 验证码 --}}
-            <div>
-                <label class="label" for="captcha">验证码</label>
+            <x-form-field name="captcha" label="验证码" :required="true">
                 <div class="flex items-end gap-3">
                     <div class="relative flex-1">
                         <x-icon name="heroicon-o-shield-exclamation" class="h-5 w-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                         <input
                             id="captcha"
-                            class="input pl-11"
+                            class="input pl-11 @error('captcha') input-error @enderror"
                             type="text"
                             name="captcha"
                             value="{{ old('captcha') }}"
@@ -91,8 +86,7 @@
                         onclick="this.src = '{{ route('captcha') }}?t=' + Date.now()"
                     >
                 </div>
-                <x-input-error :messages="$errors->get('captcha')" class="mt-2" />
-            </div>
+            </x-form-field>
 
             {{-- 记住我 --}}
             <div class="flex items-center justify-between">
@@ -100,20 +94,30 @@
                     <input
                         id="remember_me"
                         type="checkbox"
-                        class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:bg-gray-700"
+                        class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 shadow-sm focus:ring-primary-500 dark:bg-gray-700"
                         name="remember"
                     >
                     <span class="ms-2 text-sm text-gray-600 dark:text-gray-300">记住我</span>
                 </label>
             </div>
 
-            {{-- 登录按钮 --}}
+            {{-- 登录按钮（含提交 loading 态） --}}
             <button
                 type="submit"
-                class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:from-indigo-700 active:to-violet-700 text-white text-sm font-semibold rounded-xl transition shadow-md shadow-indigo-500/20"
+                @click="loading = true"
+                :disabled="loading"
+                :class="loading ? 'opacity-70 cursor-wait' : ''"
+                class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-violet-600 hover:from-primary-500 hover:to-violet-500 active:from-primary-700 active:to-violet-700 text-white text-sm font-semibold rounded-xl transition shadow-md shadow-primary-500/20"
             >
-                <x-icon name="heroicon-o-arrow-right-on-rectangle" class="h-4 w-4" />
-                登录
+                <svg x-show="loading" x-cloak class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span x-show="loading" x-cloak>登录中…</span>
+                <span x-show="!loading" class="inline-flex items-center gap-2">
+                    <x-icon name="heroicon-o-arrow-right-on-rectangle" class="h-4 w-4" />
+                    登录
+                </span>
             </button>
         </form>
     </div>

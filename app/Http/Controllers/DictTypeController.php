@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DictType;
 use App\Support\Dict;
+use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,14 +14,24 @@ use Illuminate\View\View;
  */
 class DictTypeController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        [$perPage, $sort, $dir] = ListQuery::resolve(
+            $request,
+            ['id', 'name', 'type', 'created_at']
+        );
+
         $dictTypes = DictType::query()
             ->withCount('items')
-            ->orderBy('id')
-            ->paginate(config('app.pagination', 15));
+            ->when(
+                $sort,
+                fn ($query) => $query->orderBy($sort, $dir),
+                fn ($query) => $query->orderBy('id')
+            )
+            ->paginate($perPage)
+            ->withQueryString();
 
-        return view('dict-types.index', compact('dictTypes'));
+        return view('dict-types.index', compact('dictTypes', 'sort', 'dir'));
     }
 
     public function create(): View

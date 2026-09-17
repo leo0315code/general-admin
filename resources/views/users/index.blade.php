@@ -1,11 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">用户管理</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">管理系统用户与角色分配</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
+        <x-page-header title="用户管理" description="管理系统用户与角色分配">
+            <x-slot name="actions">
                 {{-- 导入（选完文件自动上传） --}}
                 @can('users.import')
                     <form method="POST" action="{{ route('users.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
@@ -40,8 +36,8 @@
                         新建用户
                     </a>
                 @endcan
-            </div>
-        </div>
+            </x-slot>
+        </x-page-header>
     </x-slot>
 
     <x-flash-messages />
@@ -58,7 +54,7 @@
         </div>
     @endif
 
-    <div class="card">
+    <div class="card" x-data="listSelection()">
         {{-- 搜索栏 --}}
         <div class="card-header">
             <form method="GET" action="{{ route('users.index') }}" class="flex flex-col sm:flex-row gap-3">
@@ -75,126 +71,138 @@
             </form>
         </div>
 
+        {{-- 批量操作条 --}}
+        <div class="px-5 pt-4">
+            @can('user.manage')
+                <x-bulk-actions
+                    :action-url="route('users.bulk-delete')"
+                    method="POST"
+                    confirm-title="确定删除选中的用户吗？"
+                    confirm-message="删除后将进入回收站（软删除），可在回收站中还原。"
+                >
+                    <button type="submit" class="btn-danger-ghost" @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))">
+                        <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                        批量删除
+                    </button>
+                    <button type="submit" class="btn-ghost" @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))">
+                        <x-icon name="heroicon-o-arrow-path" class="h-4 w-4" />
+                        批量启停
+                    </button>
+                </x-bulk-actions>
+            @endcan
+        </div>
+
         {{-- 用户表格 --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th class="th">ID</th>
-                        <th class="th">姓名</th>
-                        <th class="th">邮箱</th>
-                        <th class="th">角色</th>
-                        <th class="th">状态</th>
-                        <th class="th">最后登录</th>
-                        <th class="th">注册时间</th>
-                        <th class="th text-right">操作</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse ($users as $user)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            <td class="td text-gray-500 dark:text-gray-400">{{ $user->id }}</td>
-                            <td class="td">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shrink-0">
-                                        {{ strtoupper(mb_substr($user->name, 0, 1)) }}
-                                    </span>
-                                    <span class="font-medium text-gray-900 dark:text-gray-100">{{ $user->name }}</span>
-                                </div>
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $user->email }}</td>
-                            <td class="td">
-                                <div class="flex flex-wrap gap-1.5">
-                                    @forelse ($user->roles as $role)
-                                        @if ($role->name === \App\Models\User::ROLE_ADMIN)
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
-                                                <x-icon name="heroicon-o-shield-check" class="h-3 w-3" />
-                                                {{ $role->name }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300">
-                                                <x-icon name="heroicon-o-user" class="h-3 w-3" />
-                                                {{ $role->name }}
-                                            </span>
-                                        @endif
-                                    @empty
-                                        <span class="text-xs text-gray-400 dark:text-gray-500">无角色</span>
-                                    @endforelse
-                                </div>
-                            </td>
-                            <td class="td">
+        <x-data-table
+            :columns="[
+                ['key' => 'id', 'label' => 'ID', 'sortable' => true],
+                ['key' => 'name', 'label' => '姓名', 'sortable' => true],
+                ['key' => 'email', 'label' => '邮箱', 'sortable' => true],
+                ['key' => null, 'label' => '角色'],
+                ['key' => 'status', 'label' => '状态', 'sortable' => true],
+                ['key' => 'last_login_at', 'label' => '最后登录', 'sortable' => true],
+                ['key' => 'created_at', 'label' => '注册时间', 'sortable' => true],
+                ['key' => null, 'label' => '操作', 'align' => 'right'],
+            ]"
+            :selectable="true"
+            :sort="$sort ?? null"
+            :sort-dir="$dir ?? 'desc'"
+        >
+            <x-slot name="rows">
+                @forelse ($users as $user)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="td w-10">
+                            <input type="checkbox" value="{{ $user->id }}" data-select-row x-model="selectedIds" @change="syncSelectAll" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 shadow-sm focus:ring-primary-500" aria-label="选择用户 {{ $user->name }}">
+                        </td>
+                        <td class="td text-gray-500 dark:text-gray-400">{{ $user->id }}</td>
+                        <td class="td">
+                            <div class="flex items-center gap-2.5">
+                                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 text-xs font-semibold shrink-0">
+                                    {{ strtoupper(mb_substr($user->name, 0, 1)) }}
+                                </span>
+                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ $user->name }}</span>
+                            </div>
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ $user->email }}</td>
+                        <td class="td">
+                            <div class="flex flex-wrap gap-1.5">
+                                @forelse ($user->roles as $role)
+                                    @if ($role->name === \App\Models\User::ROLE_ADMIN)
+                                        <x-status-badge type="info" icon="heroicon-o-shield-check" size="xs">{{ $role->name }}</x-status-badge>
+                                    @else
+                                        <x-status-badge type="info" icon="heroicon-o-user" size="xs">{{ $role->name }}</x-status-badge>
+                                    @endif
+                                @empty
+                                    <span class="text-xs text-gray-400 dark:text-gray-500">无角色</span>
+                                @endforelse
+                            </div>
+                        </td>
+                        <td class="td">
+                            <div class="flex flex-wrap items-center gap-1.5">
                                 @if ($user->isActive())
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                                        <x-icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
-                                        启用
-                                    </span>
+                                    <x-status-badge type="success" icon="heroicon-o-check-circle">启用</x-status-badge>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
-                                        <x-icon name="heroicon-o-x-circle" class="h-3.5 w-3.5" />
-                                        停用
-                                    </span>
+                                    <x-status-badge type="danger" icon="heroicon-o-x-circle">停用</x-status-badge>
                                 @endif
                                 @if ($user->must_change_password)
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300" title="首次登录需修改密码">
-                                        <x-icon name="heroicon-o-key" class="h-3.5 w-3.5" />
-                                        待改密
-                                    </span>
+                                    <x-status-badge type="warning" icon="heroicon-o-key" size="xs" title="首次登录需修改密码">待改密</x-status-badge>
                                 @endif
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                                @if ($user->last_login_at)
-                                    {{ $user->last_login_at->format('Y-m-d H:i') }}
-                                    <span class="block text-xs text-gray-400 dark:text-gray-500">{{ $user->last_login_ip ?? '—' }}</span>
-                                @else
-                                    <span class="text-gray-400 dark:text-gray-500">从未登录</span>
-                                @endif
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ $user->created_at->format('Y-m-d H:i') }}</td>
-                            <td class="td text-right whitespace-nowrap">
-                                <a href="{{ route('users.edit', $user) }}" class="btn-ghost" title="编辑">
-                                    <x-icon name="heroicon-o-pencil-square" class="h-4 w-4" />
-                                    编辑
-                                </a>
+                            </div>
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                            @if ($user->last_login_at)
+                                {{ $user->last_login_at->format('Y-m-d H:i') }}
+                                <span class="block text-xs text-gray-400 dark:text-gray-500">{{ $user->last_login_ip ?? '—' }}</span>
+                            @else
+                                <span class="text-gray-400 dark:text-gray-500">从未登录</span>
+                            @endif
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ $user->created_at->format('Y-m-d H:i') }}</td>
+                        <td class="td text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-0.5">
+                                <x-icon-button icon="heroicon-o-pencil-square" :href="route('users.edit', $user)" title="编辑" variant="primary" />
+
                                 @unless ($user->is(auth()->user()))
                                     <form method="POST" action="{{ route('users.toggle-status', $user) }}" class="inline"
-                                          onsubmit="return confirm('确定要{{ $user->isActive() ? '停用' : '启用' }}用户「{{ $user->name }}」吗？');">
+                                          data-confirm-title="确定要{{ $user->isActive() ? '停用' : '启用' }}用户「{{ $user->name }}」吗？"
+                                          data-confirm-message="{{ $user->isActive() ? '停用后该用户将无法登录。' : '启用后该用户可正常登录。' }}">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="btn-ghost {{ $user->isActive() ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}" title="{{ $user->isActive() ? '停用（无法登录）' : '启用' }}">
-                                            <x-icon :name="$user->isActive() ? 'heroicon-o-pause' : 'heroicon-o-play'" class="h-4 w-4" />
-                                            {{ $user->isActive() ? '停用' : '启用' }}
-                                        </button>
+                                        <x-icon-button :icon="$user->isActive() ? 'heroicon-o-pause' : 'heroicon-o-play'"
+                                                       :title="$user->isActive() ? '停用（无法登录）' : '启用'"
+                                                       @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))" />
                                     </form>
                                 @endunless
+
                                 @can('users.destroy')
                                     @unless ($user->is(auth()->user()))
-                                        <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline" onsubmit="return confirm('确定要删除用户「{{ $user->name }}」吗？');">
+                                        <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline"
+                                              data-confirm-title="确定要删除用户「{{ $user->name }}」吗？"
+                                              data-confirm-message="删除后将无法登录（软删除，可在回收站中还原）。">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn-danger-ghost" title="删除">
-                                                <x-icon name="heroicon-o-trash" class="h-4 w-4" />
-                                                删除
-                                            </button>
+                                            <x-icon-button icon="heroicon-o-trash" title="删除" variant="danger"
+                                                           @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))" />
                                         </form>
                                     @endunless
                                 @endcan
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="px-5 py-12 text-center">
-                                <x-icon name="heroicon-o-users" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">没有找到用户</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <x-empty-state icon="heroicon-o-users" title="没有找到用户" :colspan="9" />
+                @endforelse
+            </x-slot>
+        </x-data-table>
 
-        {{-- 分页 --}}
+        {{-- 分页 + 每页条数 --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-            {{ $users->links() }}
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <x-per-page :paginator="$users" />
+                <x-pagination :paginator="$users" />
+            </div>
         </div>
     </div>
+
+    <x-confirm-modal />
 </x-app-layout>

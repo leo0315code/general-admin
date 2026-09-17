@@ -22,6 +22,11 @@ class OperationLogger
         'users.reset-password' => ['用户', '修改', '重置用户密码'],
         'users.import' => ['用户', '导入', '批量导入用户'],
         'users.export' => ['用户', '导出', '导出用户数据'],
+        'users.toggle-status' => ['用户', '修改', '切换用户启用状态'],
+        'users.restore' => ['用户', '还原', '还原已删除用户'],
+        'users.force-destroy' => ['用户', '删除', '彻底删除用户'],
+        'users.bulk-delete' => ['用户', '删除', '批量删除用户'],
+        'users.bulk-toggle-status' => ['用户', '修改', '批量切换用户状态'],
         // 角色管理
         'roles.store' => ['角色', '创建', '创建角色'],
         'roles.update' => ['角色', '修改', '更新角色'],
@@ -37,6 +42,9 @@ class OperationLogger
         'posts.destroy' => ['文章', '删除', '删除文章'],
         'posts.toggle-status' => ['文章', '修改', '切换文章状态'],
         'posts.export' => ['文章', '导出', '导出文章数据'],
+        'posts.restore' => ['文章', '还原', '还原已删除文章'],
+        'posts.force-destroy' => ['文章', '删除', '彻底删除文章'],
+        'posts.bulk-delete' => ['文章', '删除', '批量删除文章'],
         // 个人资料
         'profile.update' => ['个人', '修改', '更新个人资料'],
         'profile.destroy' => ['个人', '删除', '删除个人账号'],

@@ -18,25 +18,25 @@
     <body class="font-sans antialiased h-full bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
         <div class="min-h-full flex flex-col items-center justify-center px-6 py-16">
             <div class="text-center max-w-md">
-                <div class="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-red-100 dark:bg-red-500/15 mb-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-10 w-10 text-red-500">
+                <div class="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-danger-100 dark:bg-danger-500/15 mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-10 w-10 text-danger-500">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
                 </div>
                 <h1 class="text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white">500</h1>
-                <h2 class="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">服务器开小差了</h2>
+                <h2 class="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">服务器错误</h2>
                 <p class="mt-3 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                    服务器遇到错误，无法完成您的请求。请稍后重试，或联系系统管理员排查。
+                    服务器开小差了，请稍后重试。若问题持续，请联系系统管理员。
                 </p>
                 <div class="mt-8 flex items-center justify-center gap-3">
-                    <a href="{{ url('/') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition">
+                    <a href="{{ url('/') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium transition">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
                         </svg>
-                        重新加载
-                    </a>
-                    <a href="{{ url('/') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition">
                         返回首页
+                    </a>
+                    <a href="{{ route('login') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition">
+                        返回登录页
                     </a>
                 </div>
             </div>

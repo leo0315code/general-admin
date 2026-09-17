@@ -1,17 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">文章回收站</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">已删除文章可在此还原或彻底清除</p>
-            </div>
-            <div class="flex items-center gap-2">
+        <x-page-header title="文章回收站" description="已删除文章可在此还原或彻底清除" :back-url="route('posts.index')">
+            <x-slot name="actions">
                 <a href="{{ route('posts.index') }}" class="btn-secondary">
                     <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
                     返回文章列表
                 </a>
-            </div>
-        </div>
+            </x-slot>
+        </x-page-header>
     </x-slot>
 
     <x-flash-messages />
@@ -39,67 +35,64 @@
         </div>
 
         {{-- 已删除文章表格 --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th class="th">ID</th>
-                        <th class="th">标题</th>
-                        <th class="th">作者</th>
-                        <th class="th">状态</th>
-                        <th class="th">删除时间</th>
-                        <th class="th text-right">操作</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse ($posts as $post)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            <td class="td text-gray-500 dark:text-gray-400">{{ $post->id }}</td>
-                            <td class="td font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{{ $post->title }}</td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $post->user->name ?? '—' }}</td>
-                            <td class="td">
-                                @if ($post->isPublished())
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">已发布</span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">草稿</span>
-                                @endif
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $post->deleted_at->format('Y-m-d H:i') }}</td>
-                            <td class="td text-right whitespace-nowrap">
+        <x-data-table
+            :columns="[
+                ['key' => 'id', 'label' => 'ID', 'sortable' => true],
+                ['key' => 'title', 'label' => '标题', 'sortable' => true],
+                ['key' => null, 'label' => '作者'],
+                ['key' => 'status', 'label' => '状态', 'sortable' => true],
+                ['key' => 'created_at', 'label' => '删除时间', 'sortable' => true],
+                ['key' => null, 'label' => '操作', 'align' => 'right'],
+            ]"
+            :sort="$sort ?? null"
+            :sort-dir="$dir ?? 'desc'"
+        >
+            <x-slot name="rows">
+                @forelse ($posts as $post)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="td text-gray-500 dark:text-gray-400">{{ $post->id }}</td>
+                        <td class="td font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{{ $post->title }}</td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ $post->user->name ?? '—' }}</td>
+                        <td class="td">
+                            @if ($post->isPublished())
+                                <x-status-badge type="success" icon="heroicon-o-check-circle">已发布</x-status-badge>
+                            @else
+                                <x-status-badge type="neutral" icon="heroicon-o-pencil-square">草稿</x-status-badge>
+                            @endif
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ $post->deleted_at->format('Y-m-d H:i') }}</td>
+                        <td class="td text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-0.5">
                                 <form method="POST" action="{{ route('posts.restore', $post->id) }}" class="inline">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="btn-ghost" title="还原该文章">
-                                        <x-icon name="heroicon-o-arrow-uturn-left" class="h-4 w-4" />
-                                        还原
-                                    </button>
+                                    <x-icon-button icon="heroicon-o-arrow-uturn-left" title="还原该文章" variant="primary" />
                                 </form>
                                 <form method="POST" action="{{ route('posts.force-destroy', $post->id) }}" class="inline"
-                                      onsubmit="return confirm('彻底删除文章「{{ $post->title }}」将无法恢复，确定继续吗？');">
+                                      data-confirm-title="彻底删除文章「{{ $post->title }}」？"
+                                      data-confirm-message="彻底删除将无法恢复，确定继续吗？">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-danger-ghost" title="彻底删除（不可恢复）">
-                                        <x-icon name="heroicon-o-trash" class="h-4 w-4" />
-                                        彻底删除
-                                    </button>
+                                    <x-icon-button icon="heroicon-o-trash" title="彻底删除（不可恢复）" variant="danger"
+                                                   @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))" />
                                 </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-5 py-12 text-center">
-                                <x-icon name="heroicon-o-document-text" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">回收站是空的</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <x-empty-state icon="heroicon-o-document-text" title="回收站是空的" :colspan="6" />
+                @endforelse
+            </x-slot>
+        </x-data-table>
 
-        {{-- 分页 --}}
-        <div class="p-4 border-t border-gray-100 dark:border-gray-700/60">
-            {{ $posts->links() }}
+        {{-- 分页 + 每页条数 --}}
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <x-per-page :paginator="$posts" />
+                <x-pagination :paginator="$posts" />
+            </div>
         </div>
     </div>
+
+    <x-confirm-modal />
 </x-app-layout>

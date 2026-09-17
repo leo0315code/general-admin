@@ -1,11 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">操作日志</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">登录审计与后台操作审计</p>
-            </div>
-        </div>
+        <x-page-header title="操作日志" description="登录审计与后台操作审计" />
     </x-slot>
 
     <x-flash-messages />
@@ -35,80 +30,65 @@
         </div>
 
         {{-- 日志表格 --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th class="th">ID</th>
-                        <th class="th">时间</th>
-                        <th class="th">用户</th>
-                        <th class="th">操作类型</th>
-                        <th class="th">描述</th>
-                        <th class="th">IP 地址</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse ($logs as $log)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            <td class="td text-gray-500 dark:text-gray-400">{{ $log->id }}</td>
-                            <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                            <td class="td">
-                                <span class="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
-                                    @if ($log->user_id)
-                                        <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold">
-                                            {{ strtoupper(mb_substr($log->username ?? '?', 0, 1)) }}
-                                        </span>
-                                    @else
-                                        <x-icon name="heroicon-o-user-minus" class="h-4 w-4 text-gray-400" />
-                                    @endif
-                                    {{ $log->username ?? '—' }}
-                                </span>
-                            </td>
-                            <td class="td">
-                                @if ($log->action === '登录' || $log->action === '登录成功')
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                                        <x-icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
-                                        {{ $log->action }}
-                                    </span>
-                                @elseif (str_contains($log->action, '失败'))
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
-                                        <x-icon name="heroicon-o-x-circle" class="h-3.5 w-3.5" />
-                                        {{ $log->action }}
-                                    </span>
-                                @elseif ($log->action === '删除')
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
-                                        <x-icon name="heroicon-o-trash" class="h-3.5 w-3.5" />
-                                        {{ $log->action }}
-                                    </span>
-                                @elseif ($log->action === '创建')
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300">
-                                        <x-icon name="heroicon-o-plus-circle" class="h-3.5 w-3.5" />
-                                        {{ $log->action }}
+        <x-data-table
+            :columns="[
+                ['key' => 'id', 'label' => 'ID', 'sortable' => true],
+                ['key' => 'created_at', 'label' => '时间', 'sortable' => true],
+                ['key' => null, 'label' => '用户'],
+                ['key' => 'action', 'label' => '操作类型', 'sortable' => true],
+                ['key' => null, 'label' => '描述'],
+                ['key' => 'ip', 'label' => 'IP 地址', 'sortable' => true],
+            ]"
+            :sort="$sort ?? null"
+            :sort-dir="$dir ?? 'desc'"
+        >
+            <x-slot name="rows">
+                @forelse ($logs as $log)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="td text-gray-500 dark:text-gray-400">{{ $log->id }}</td>
+                        <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                        <td class="td">
+                            <span class="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+                                @if ($log->user_id)
+                                    <span class="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 text-[10px] font-semibold">
+                                        {{ strtoupper(mb_substr($log->username ?? '?', 0, 1)) }}
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                        {{ $log->action }}
-                                    </span>
+                                    <x-icon name="heroicon-o-user-minus" class="h-4 w-4 text-gray-400" />
                                 @endif
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ $log->description ?? '—' }}</td>
-                            <td class="td text-gray-500 dark:text-gray-400 font-mono text-xs">{{ $log->ip ?? '—' }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-5 py-12 text-center">
-                                <x-icon name="heroicon-o-clipboard-document-list" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">暂无操作日志</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                {{ $log->username ?? '—' }}
+                            </span>
+                        </td>
+                        <td class="td">
+                            @if ($log->action === '登录' || $log->action === '登录成功')
+                                <x-status-badge type="success" icon="heroicon-o-check-circle">{{ $log->action }}</x-status-badge>
+                            @elseif (str_contains($log->action, '失败'))
+                                <x-status-badge type="danger" icon="heroicon-o-x-circle">{{ $log->action }}</x-status-badge>
+                            @elseif ($log->action === '删除')
+                                <x-status-badge type="danger" icon="heroicon-o-trash">{{ $log->action }}</x-status-badge>
+                            @elseif ($log->action === '创建')
+                                <x-status-badge type="info" icon="heroicon-o-plus-circle">{{ $log->action }}</x-status-badge>
+                            @else
+                                <x-status-badge type="neutral">{{ $log->action }}</x-status-badge>
+                            @endif
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ $log->description ?? '—' }}</td>
+                        <td class="td text-gray-500 dark:text-gray-400 font-mono text-xs">{{ $log->ip ?? '—' }}</td>
+                    </tr>
+                @empty
+                    <x-empty-state icon="heroicon-o-clipboard-document-list" title="暂无操作日志" :colspan="6" />
+                @endforelse
+            </x-slot>
+        </x-data-table>
 
-        {{-- 分页 --}}
+        {{-- 分页 + 每页条数 --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-            {{ $logs->links() }}
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <x-per-page :paginator="$logs" />
+                <x-pagination :paginator="$logs" />
+            </div>
         </div>
     </div>
+
+    <x-confirm-modal />
 </x-app-layout>

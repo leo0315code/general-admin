@@ -57,7 +57,16 @@
 
 **实测**：`php artisan test` → **172 passed (558 assertions)**（新增 AccountLifecycleTest 7 用例）；`view:cache` 编译通过；本地 MySQL 已 migrate 并实测字段/路由。
 
-**仍未处理（按原顺序）**：第 2 批剩余的事务/失败行下载/生产配置基线，以及第四~六节的 P1/P2/P3 各项（附件上传、PostPolicy、admin 保护、列表能力、索引、日志治理、通知队列、定时任务、部署文档等）。
+**已完成（2026-09-17 · P1 安全收口）**
+
+| 原编号 | 内容 | 落点 |
+| --- | --- | --- |
+| P1-数据范围授权 | 新增 `PostPolicy`（Laravel 自动发现）：admin 或作者本人可编辑/删除文章；`PostController` 的 edit/update/toggleStatus/destroy 全部 `$this->authorize()` 接入（base `Controller` 补 `AuthorizesRequests` trait） | `app/Policies/PostPolicy.php`、`PostController`、`Controller.php` |
+| P1-超级管理员保护 | `UserController::isLastActiveAdmin()`：唯一启用 admin 不可被删除/停用/移除 admin 角色（destroy/toggleStatus/update 三处接入），非最后 admin 正常操作不误伤 | `UserController` |
+
+**实测**：`php artisan test` → **181 passed (575 assertions)**（新增 SecurityGuardTest 9 用例）；`view:cache` 编译通过。
+
+**仍未处理（按原顺序）**：第 2 批剩余的事务/失败行下载/生产配置基线，以及第四~六节的 P1/P2/P3 各项（附件上传、列表能力、索引、日志治理、通知队列、定时任务、部署文档等）。
 
 ---
 
@@ -113,8 +122,8 @@
 | 回收站 | ✅ **已落地**：`users`/`posts` trash/restore/force-delete 全链路 + 已删计数入口 + 确认弹窗 | — |
 | 账号启停与登录痕迹 | ✅ **已落地**：`users.status`（启停/停用拦截登录）+ `last_login_at`/`last_login_ip` + `must_change_password`（首登强制改密），列表/编辑页展示，测试覆盖 | — |
 | 权限管理页 | ✅ **已落地**：`menus` 表 + 菜单管理页（三级树）+ 角色授权按树勾选，权限由菜单自动同步 | — |
-| 数据范围授权 | `PostController` 的 `edit/update/destroy/toggleStatus` 均无归属校验，只靠 `permission:post.manage` | 任何拥有该权限的编辑可改/删他人文章；应引入 `PostPolicy`（`viewAny/view/update/delete`） |
-| 超级管理员保护 | `AuthServiceProvider.php:30-34` 中 admin 直接 `return true`；`UserController::destroy` 只挡"删除自己" | 无"最后一个 admin 不可删除/降级"约束，无二次确认与审计 |
+| 数据范围授权 | ✅ **已落地**：`PostPolicy`（admin 或作者本人），PostController 全部写操作 `$this->authorize()` 接入 | — |
+| 超级管理员保护 | ✅ **已落地**：`isLastActiveAdmin`——唯一启用 admin 不可删除/停用/移除 admin 角色，三处接入 + 测试 | — |
 | 导入/导出工程化 | 导入已加固（查重/角色预检/随机密码/失败行回执）；导出已改 `FromQuery` 流式并**跟随筛选** | ⬜ 剩余：文件大小/最大行数限制、事务、失败行下载、数据量上限 |
 | 登录安全 | `LoginRequest.php:103` 已有 5 次限流；`AuthenticatedSessionController::captcha` 无独立限流 | 缺验证码接口限流、账号锁定、密码强度/到期策略、MFA、异地告警、旧 session 失效策略 |
 | 生产配置基线 | `.env.example`：`APP_ENV=local`、`APP_DEBUG=true`、`DB_PASSWORD=root`、`LOG_LEVEL=debug` | 需补 `.env.production` 模板：`production`/`false`、最小权限 DB 账号、真实邮件驱动、HTTPS + 安全 Cookie |

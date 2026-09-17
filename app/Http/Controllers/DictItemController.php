@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DictItem;
 use App\Models\DictType;
 use App\Support\Dict;
+use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,16 +15,26 @@ use Illuminate\View\View;
  */
 class DictItemController extends Controller
 {
-    /** 字典项列表（按 dict_type_id 过滤） */
+    /** 字典项列表（按 dict_type_id 过滤 + 每页条数/排序） */
     public function index(Request $request): View
     {
         $dictType = DictType::query()->findOrFail($request->integer('dict_type_id'));
 
+        [$perPage, $sort, $dir] = ListQuery::resolve(
+            $request,
+            ['id', 'value', 'sort', 'created_at']
+        );
+
         $items = $dictType->items()
-            ->paginate(config('app.pagination', 15))
+            ->when(
+                $sort,
+                fn ($query) => $query->reorder()->orderBy($sort, $dir),
+                fn ($query) => $query->orderBy('sort')->orderBy('id')
+            )
+            ->paginate($perPage)
             ->withQueryString();
 
-        return view('dict-items.index', compact('dictType', 'items'));
+        return view('dict-items.index', compact('dictType', 'items', 'sort', 'dir'));
     }
 
     public function create(Request $request): View

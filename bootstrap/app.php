@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 操作日志中间件（记录后台写操作）
         $middleware->web(append: [
             \App\Http\Middleware\LogOperation::class,
+            // 安全响应头（UI 现代化重构 · T05 / SEC-4）
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         // Spatie laravel-permission 提供的中间件别名

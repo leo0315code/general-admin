@@ -1,3 +1,6 @@
+@php
+    $navGroups = \App\Support\Navigation::forUser(Auth::user());
+@endphp
 <!DOCTYPE html>
 <html lang="zh-CN" class="h-full">
     <head>
@@ -13,6 +16,11 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        {{-- 顶栏全局搜索数据源：当前用户可见菜单（客户端过滤） --}}
+        <script>
+            window.__navGroups = @json($navGroups);
+        </script>
 
         {{-- 防止暗色模式闪烁：在 CSS 加载前先根据 localStorage/系统偏好设置 .dark 类 --}}
         <script>
@@ -46,15 +54,63 @@
                         </button>
 
                         <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 text-gray-800 dark:text-gray-100">
-                            <span class="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+                            <span class="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-primary-500 to-violet-600 text-white shadow-sm">
                                 <x-icon name="heroicon-o-squares-2x2" class="h-5 w-5" />
                             </span>
                             <span class="hidden sm:block font-semibold text-lg tracking-tight">{{ config('app.name', '通用管理后台') }}</span>
                         </a>
                     </div>
 
-                    {{-- 右侧：搜索 + 明暗切换 + 用户下拉 --}}
+                    {{-- 右侧：全局搜索 + 明暗切换 + 用户下拉 --}}
                     <div class="flex items-center gap-1.5 sm:gap-2">
+                        {{-- 全局搜索（客户端过滤当前用户可见菜单） --}}
+                        <div class="hidden md:block relative" x-data="globalSearch()" @keydown.escape.window="open = false">
+                            <div class="relative">
+                                <x-icon name="heroicon-o-magnifying-glass" class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="search"
+                                    x-ref="input"
+                                    x-model="query"
+                                    @focus="open = true"
+                                    @keydown.slash.window.prevent="open = true; focusInput()"
+                                    placeholder="搜索菜单…（/）"
+                                    class="input !w-52 xl:!w-64 !py-2 pl-9 text-sm"
+                                    aria-label="全局搜索"
+                                >
+                            </div>
+
+                            {{-- 搜索结果 --}}
+                            <div
+                                x-show="open && results.length > 0"
+                                @click.outside="open = false"
+                                x-transition:enter="ease-out duration-150"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="ease-in duration-100"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute right-0 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-popover z-50"
+                            >
+                                <template x-for="r in results" :key="r.url">
+                                    <a :href="r.url" @click="go(r.url)" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                        <span class="inline-flex items-center justify-center h-7 w-7 shrink-0 rounded-lg bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300">
+                                            <x-icon name="heroicon-o-squares-2x2" class="h-4 w-4" />
+                                        </span>
+                                        <span class="truncate" x-text="r.title"></span>
+                                    </a>
+                                </template>
+                            </div>
+
+                            {{-- 无结果 --}}
+                            <div
+                                x-show="open && query.trim() !== '' && results.length === 0"
+                                @click.outside="open = false"
+                                class="absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-popover z-50 px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                            >
+                                没有匹配的菜单
+                            </div>
+                        </div>
+
                         {{-- 明/暗切换按钮 --}}
                         <button
                             type="button"
@@ -70,7 +126,7 @@
                         <x-dropdown align="right" width="56">
                             <x-slot name="trigger">
                                 <button class="flex items-center gap-2.5 pl-2 pr-1 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-sm font-semibold">
+                                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gradient-to-br from-primary-500 to-violet-600 text-white text-sm font-semibold">
                                         {{ strtoupper(mb_substr(Auth::user()->name, 0, 1)) }}
                                     </span>
                                     <span class="hidden sm:flex flex-col items-start leading-tight">
@@ -112,12 +168,17 @@
                 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
                 class="fixed left-0 top-16 bottom-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 overflow-y-auto transition-transform duration-200 lg:translate-x-0"
             >
-                @include('layouts.sidebar')
+                @include('layouts.sidebar', ['navGroups' => $navGroups])
             </aside>
 
-            {{-- 主内容区（全宽：预留顶栏高度与侧边栏宽度，不使用居中容器） --}}
+            {{-- 主内容区（全宽：预留顶栏高度与侧边栏宽度，不使用居中容器；页面淡入过渡） --}}
             <main class="pt-16 lg:pl-64">
-                <div class="p-4 sm:p-6 lg:p-8">
+                <div
+                    class="p-4 sm:p-6 lg:p-8 transition-opacity duration-300"
+                    x-data="{ pageLoaded: false }"
+                    x-init="$nextTick(() => pageLoaded = true)"
+                    :class="pageLoaded ? 'opacity-100' : 'opacity-0'"
+                >
                     @isset($header)
                         <div class="mb-6">
                             {{ $header }}
@@ -128,5 +189,8 @@
                 </div>
             </main>
         </div>
+
+        {{-- 全局 Toast 容器 --}}
+        <x-toast />
     </body>
 </html>

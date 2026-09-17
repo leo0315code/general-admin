@@ -49,6 +49,10 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
         Route::patch('users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::delete('users/{user}/force-delete', [UserController::class, 'forceDestroy'])->name('users.force-destroy');
 
+        // 批量操作（同样须在 resource 之前注册，避免被 {user} 参数捕获）
+        Route::post('users/bulk-delete', [UserController::class, 'bulkDestroy'])->name('users.bulk-delete');
+        Route::post('users/bulk-toggle-status', [UserController::class, 'bulkToggleStatus'])->name('users.bulk-toggle-status');
+
         Route::resource('users', UserController::class)->except(['show']);
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])
             ->name('users.reset-password');
@@ -96,6 +100,9 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
         Route::get('posts/trash', [PostController::class, 'trash'])->name('posts.trash');
         Route::patch('posts/{post}/restore', [PostController::class, 'restore'])->name('posts.restore');
         Route::delete('posts/{post}/force-delete', [PostController::class, 'forceDestroy'])->name('posts.force-destroy');
+
+        // 批量操作（同样须在 resource 之前注册）
+        Route::post('posts/bulk-delete', [PostController::class, 'bulkDestroy'])->name('posts.bulk-delete');
 
         Route::resource('posts', PostController::class)->except(['show']);
         Route::patch('posts/{post}/toggle-status', [PostController::class, 'toggleStatus'])

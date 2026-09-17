@@ -1,0 +1,70 @@
+%% 4.1 列表页加载（筛选 + 排序 + 每页条数 + 跳页，全部 URL 驱动）
+sequenceDiagram
+    autonumber
+    actor U as 管理员
+    participant B as 浏览器(Alpine)
+    participant C as UserController@index
+    participant L as ListQuery
+    participant DB as MySQL
+
+    U->>B: GET /console/users?search=张&sort=created_at&sort_dir=desc&per_page=20&page=2
+    B->>C: HTTP 请求（query 参数）
+    C->>L: resolve($request, ['id','name','email','status','created_at','last_login_at'])
+    L->>L: per_page 归一化(20) / sort 白名单校验(created_at) / dir(desc)
+    L-->>C: [20, 'created_at', 'desc']
+    C->>DB: SELECT * FROM users WHERE deleted_at IS NULL AND (name LIKE ? OR email LIKE ?) ORDER BY created_at DESC LIMIT 20 OFFSET 20
+    Note over C,DB: 走 (deleted_at, created_at) 索引，type=ref，无 filesort
+    DB-->>C: 当前页 20 行 + 总数
+    C->>B: users.index 视图（compact: users/keyword/sort/sort_dir/trashedCount）
+    B->>B: DataTable 渲染 th 排序箭头、StatusBadge、IconButton；Pagination 渲染页码+跳页；PerPage 渲染 10/20/50/100
+    B-->>U: 页面（首屏 ≤2s / 翻页 ≤500ms，10 万行基准）
+
+%% 4.2 破坏性操作（ConfirmModal 统一确认，表单原样提交）
+sequenceDiagram
+    autonumber
+    actor U as 管理员
+    participant B as 浏览器(Alpine)
+    participant M as ConfirmModal(store)
+    participant F as 行内真实表单
+    participant C as UserController@destroy
+    participant L as OperationLogger
+
+    U->>B: 点击行内「删除」按钮
+    B->>M: @click.prevent → Alpine.store('confirmModal').open($el.closest('form'))
+    M->>M: 读取表单 data-confirm-title/message，展示确认弹窗（缩放过渡）
+    B-->>U: 弹窗：标题/说明/确认/取消
+    U->>B: 点击「确认删除」
+    B->>M: Alpine.store('confirmModal').submit()
+    M->>F: form.submit()（真实表单：@csrf + @method('DELETE') 原样）
+    F->>C: POST /console/users/1 (method=DELETE + _token)
+    C->>C: Gate::authorize('users.destroy') + 自我保护 + 最后 admin 保护（后端校验不变）
+    C->>L: log(user_id, username, 'DELETE', '删除', '删除用户', ip, UA)
+    C-->>F: redirect back + flash('success', ...)
+    F-->>B: 302 → 刷新列表
+    B->>B: Toast store.show('success', '用户「xx」已删除（软删除）。')
+    B-->>U: Toast 3s 自动消失
+
+%% 4.3 批量勾选 + 批量删除
+sequenceDiagram
+    autonumber
+    actor U as 管理员
+    participant B as 浏览器(Alpine)
+    participant T as DataTable(select-all)
+    participant BA as BulkActions
+    participant M as ConfirmModal
+    participant C as UserController@bulkDestroy
+    participant L as OperationLogger
+
+    U->>B: 勾选表头 checkbox（select-all）
+    B->>T: Alpine 同步全部行 checkbox + 更新 ids[]
+    B-->>U: 批量操作条出现：已选 N 项 [批量删除] [批量启停]
+    U->>BA: 点击「批量删除」
+    BA->>M: open 确认弹窗（ids[] 注入隐藏 input，@csrf 保留）
+    U->>M: 确认
+    M->>BA: form.submit()
+    BA->>C: POST /console/users/bulk-delete (_token + ids[])
+    C->>C: Gate::authorize('user.manage')；逐 id 复用 destroy 规则（跳过自己/最后 admin）
+    C->>L: log('用户','删除','批量删除用户 N 个', ip, UA)
+    C-->>BA: redirect back + flash('success', '已删除 N 个用户，跳过 M 个受限项。')
+    BA-->>B: 302 → 刷新
+    B-->>U: Toast 成功反馈

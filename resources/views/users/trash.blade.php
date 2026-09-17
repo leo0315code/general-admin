@@ -1,22 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">用户回收站</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">已删除用户可在此还原或彻底清除</p>
-            </div>
-            <div class="flex items-center gap-2">
+        <x-page-header title="用户回收站" description="已删除用户可在此还原或彻底清除" :back-url="route('users.index')">
+            <x-slot name="actions">
                 <a href="{{ route('users.index') }}" class="btn-secondary">
                     <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
                     返回用户列表
                 </a>
-            </div>
-        </div>
+            </x-slot>
+        </x-page-header>
     </x-slot>
 
     <x-flash-messages />
 
-    <div class="card">
+    <div class="card" x-data="listSelection()">
         {{-- 搜索栏 --}}
         <div class="card-header">
             <form method="GET" action="{{ route('users.trash') }}" class="flex flex-col sm:flex-row gap-3">
@@ -34,64 +30,66 @@
         </div>
 
         {{-- 已删除用户表格 --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th class="th">ID</th>
-                        <th class="th">姓名</th>
-                        <th class="th">邮箱</th>
-                        <th class="th">角色</th>
-                        <th class="th">删除时间</th>
-                        <th class="th text-right">操作</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse ($users as $user)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            <td class="td text-gray-500 dark:text-gray-400">{{ $user->id }}</td>
-                            <td class="td font-medium text-gray-900 dark:text-gray-100">{{ $user->name }}</td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $user->email }}</td>
-                            <td class="td">
-                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                    {{ $user->roles->pluck('name')->join(' / ') ?: '无角色' }}
-                                </span>
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $user->deleted_at->format('Y-m-d H:i') }}</td>
-                            <td class="td text-right whitespace-nowrap">
+        <x-data-table
+            :columns="[
+                ['key' => 'id', 'label' => 'ID', 'sortable' => true],
+                ['key' => 'name', 'label' => '姓名', 'sortable' => true],
+                ['key' => 'email', 'label' => '邮箱', 'sortable' => true],
+                ['key' => null, 'label' => '角色'],
+                ['key' => 'created_at', 'label' => '删除时间', 'sortable' => true],
+                ['key' => null, 'label' => '操作', 'align' => 'right'],
+            ]"
+            :selectable="true"
+            :sort="$sort ?? null"
+            :sort-dir="$dir ?? 'desc'"
+        >
+            <x-slot name="rows">
+                @forelse ($users as $user)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="td w-10">
+                            <input type="checkbox" value="{{ $user->id }}" data-select-row x-model="selectedIds" @change="syncSelectAll" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 shadow-sm focus:ring-primary-500" aria-label="选择用户 {{ $user->name }}">
+                        </td>
+                        <td class="td text-gray-500 dark:text-gray-400">{{ $user->id }}</td>
+                        <td class="td font-medium text-gray-900 dark:text-gray-100">{{ $user->name }}</td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ $user->email }}</td>
+                        <td class="td">
+                            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                {{ $user->roles->pluck('name')->join(' / ') ?: '无角色' }}
+                            </span>
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ $user->deleted_at->format('Y-m-d H:i') }}</td>
+                        <td class="td text-right whitespace-nowrap">
+                            <div class="inline-flex items-center gap-0.5">
                                 <form method="POST" action="{{ route('users.restore', $user->id) }}" class="inline">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="btn-ghost" title="还原该用户">
-                                        <x-icon name="heroicon-o-arrow-uturn-left" class="h-4 w-4" />
-                                        还原
-                                    </button>
+                                    <x-icon-button icon="heroicon-o-arrow-uturn-left" title="还原该用户" variant="primary" />
                                 </form>
                                 <form method="POST" action="{{ route('users.force-destroy', $user->id) }}" class="inline"
-                                      onsubmit="return confirm('彻底删除用户「{{ $user->name }}」将无法恢复，确定继续吗？');">
+                                      data-confirm-title="彻底删除用户「{{ $user->name }}」？"
+                                      data-confirm-message="彻底删除将无法恢复，确定继续吗？">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-danger-ghost" title="彻底删除（不可恢复）">
-                                        <x-icon name="heroicon-o-trash" class="h-4 w-4" />
-                                        彻底删除
-                                    </button>
+                                    <x-icon-button icon="heroicon-o-trash" title="彻底删除（不可恢复）" variant="danger"
+                                                   @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))" />
                                 </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="td text-center py-12 text-gray-400 dark:text-gray-500">
-                                回收站是空的
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <x-empty-state icon="heroicon-o-trash" title="回收站是空的" :colspan="7" />
+                @endforelse
+            </x-slot>
+        </x-data-table>
 
-        {{-- 分页 --}}
-        <div class="p-4 border-t border-gray-100 dark:border-gray-700/60">
-            {{ $users->links() }}
+        {{-- 分页 + 每页条数 --}}
+        <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <x-per-page :paginator="$users" />
+                <x-pagination :paginator="$users" />
+            </div>
         </div>
     </div>
+
+    <x-confirm-modal />
 </x-app-layout>

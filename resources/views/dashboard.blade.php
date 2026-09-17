@@ -1,11 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">仪表盘</h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">欢迎回来，{{ Auth::user()->name }} 👋</p>
-            </div>
-        </div>
+        <x-page-header title="仪表盘" description="欢迎回来，{{ Auth::user()->name }} 👋" />
     </x-slot>
 
     {{-- 统计卡片 --}}
@@ -82,29 +77,23 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                             <td class="td font-medium text-gray-900 dark:text-gray-100">{{ $post->title }}</td>
                             <td class="td text-gray-600 dark:text-gray-300">{{ $post->user->name ?? '—' }}</td>
-                            <td class="td">
-                                @if ($post->isPublished())
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-                                        <x-icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
-                                        已发布
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                        <x-icon name="heroicon-o-pencil-square" class="h-3.5 w-3.5" />
-                                        草稿
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $post->published_at?->format('Y-m-d H:i') ?? '—' }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-5 py-12 text-center">
-                                <x-icon name="heroicon-o-document-text" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">暂无文章</p>
-                            </td>
-                        </tr>
-                    @endforelse
+                        <td class="td">
+                            @if ($post->isPublished())
+                                <x-status-badge type="success" icon="heroicon-o-check-circle">已发布</x-status-badge>
+                            @else
+                                <x-status-badge type="neutral" icon="heroicon-o-pencil-square">草稿</x-status-badge>
+                            @endif
+                        </td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ $post->published_at?->format('Y-m-d H:i') ?? '—' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-5 py-12 text-center">
+                            <x-icon name="heroicon-o-document-text" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">暂无文章</p>
+                        </td>
+                    </tr>
+                @endforelse
                 </tbody>
             </table>
         </div>

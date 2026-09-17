@@ -7,9 +7,85 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * 设计系统 Token（UI 现代化重构 · T01）
+ * ------------------------------------------------------------
+ * 语义色（primary=indigo / success=emerald / warning=amber / danger=red / info=sky）
+ * 取 Tailwind v4 默认 oklch 值，仅做「增量」——不删除任何默认色板，
+ * 旧视图即使未改造也正常编译渲染；10 个既有工具类仅内部指向 token，视觉不变。
+ */
 @theme {
     --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
         'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+    /* 主色（indigo） */
+    --color-primary-50:  oklch(0.962 0.018 272.314);
+    --color-primary-100: oklch(0.93 0.034 272.788);
+    --color-primary-200: oklch(0.87 0.065 274.039);
+    --color-primary-300: oklch(0.785 0.115 274.713);
+    --color-primary-400: oklch(0.673 0.182 276.935);
+    --color-primary-500: oklch(0.585 0.233 277.117);
+    --color-primary-600: oklch(0.511 0.262 276.966);
+    --color-primary-700: oklch(0.457 0.24 277.023);
+
+    /* 成功（emerald） */
+    --color-success-50:  oklch(0.95 0.052 163.051);
+    --color-success-100: oklch(0.95 0.052 163.051);
+    --color-success-500: oklch(0.696 0.17 162.48);
+    --color-success-600: oklch(0.596 0.145 163.225);
+    --color-success-700: oklch(0.508 0.118 165.612);
+
+    /* 警告（amber） */
+    --color-warning-50:  oklch(0.962 0.059 95.617);
+    --color-warning-100: oklch(0.962 0.059 95.617);
+    --color-warning-500: oklch(0.769 0.188 70.08);
+    --color-warning-600: oklch(0.666 0.179 58.318);
+    --color-warning-700: oklch(0.555 0.163 48.998);
+
+    /* 危险（red） */
+    --color-danger-50:   oklch(0.936 0.032 17.717);
+    --color-danger-100:  oklch(0.936 0.032 17.717);
+    --color-danger-400:  oklch(0.704 0.191 22.216);
+    --color-danger-500:  oklch(0.637 0.237 25.331);
+    --color-danger-600:  oklch(0.577 0.245 27.325);
+    --color-danger-700:  oklch(0.505 0.213 27.518);
+
+    /* 信息（sky） */
+    --color-info-50:     oklch(0.951 0.026 236.824);
+    --color-info-100:    oklch(0.951 0.026 236.824);
+    --color-info-500:    oklch(0.685 0.169 237.323);
+    --color-info-600:    oklch(0.588 0.158 241.966);
+    --color-info-700:    oklch(0.5 0.134 242.749);
+
+    /* 圆角 / 阴影 / 间距 / 动画 */
+    --radius-card:    0.75rem;   /* rounded-card  = 现有 card rounded-xl */
+    --radius-control: 0.5rem;    /* rounded-control = 现有按钮/输入 rounded-lg */
+    --shadow-card:    0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-popover: 0 10px 40px -8px rgb(0 0 0 / 0.15);
+    --shadow-float:   0 4px 12px -2px rgb(0 0 0 / 0.08);
+
+    --spacing-page:     2rem;    /* p-page = 页面主间距 */
+    --spacing-section:  1.5rem;  /* p-section = 区块间距 */
+    --spacing-card-pad: 1.25rem; /* p-card-pad = 卡片内边距 */
+
+    --animate-fade-in:  fade-in 0.2s ease-out;
+    --animate-scale-in: scale-in 0.18s ease-out;
+    --animate-shimmer:  shimmer 1.6s linear infinite;
+}
+
+@keyframes fade-in {
+    from { opacity: 0 }
+    to { opacity: 1 }
+}
+
+@keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96) }
+    to { opacity: 1; transform: scale(1) }
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0 }
+    100% { background-position: -200% 0 }
 }
 
 /* Alpine.js：初始隐藏标记（避免元素闪烁） */
@@ -20,11 +96,13 @@
 /*
  * 通用后台组件类（现代化风格）：
  * 卡片、按钮、表单、表格统一在此定义，业务视图直接复用，保证整体一致性。
+ * 色值一律指向 @theme 语义 token（primary/success/warning/danger/info），
+ * 禁止在业务视图中散落硬编码色值。
  */
 @layer components {
     /* 内容卡片 */
     .card {
-        @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+        @apply bg-white dark:bg-gray-800 rounded-card border border-gray-200 dark:border-gray-700 shadow-card;
     }
 
     /* 卡片标题栏 */
@@ -34,22 +112,22 @@
 
     /* 主按钮 */
     .btn-primary {
-        @apply inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-medium rounded-lg transition shadow-sm;
+        @apply inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-500 active:bg-primary-700 text-white text-sm font-medium rounded-control transition shadow-card;
     }
 
     /* 次按钮（浅色） */
     .btn-secondary {
-        @apply inline-flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg transition;
+        @apply inline-flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 rounded-control transition;
     }
 
     /* 危险图标按钮（幽灵） */
     .btn-danger-ghost {
-        @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition;
+        @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-medium text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition;
     }
 
     /* 主图标按钮（幽灵） */
     .btn-ghost {
-        @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition;
+        @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition;
     }
 
     /* 表单标签 */
@@ -58,12 +136,12 @@
     }
 
     /* 表单输入（现代风格：柔和底色、大圆角、聚焦光环、placeholder 颜色）
-       亮色：gray-50 底 + 浅边框 + 聚焦白底与 indigo 光环
+       亮色：gray-50 底 + 浅边框 + 聚焦白底与 primary 光环
        暗色：gray-700 实色底（与 gray-800 卡片区分），聚焦提亮 + 光环 */
     .input {
         @apply block w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition duration-150 ease-in-out;
         @apply hover:border-gray-400 dark:hover:border-gray-500;
-        @apply focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-indigo-500/25;
+        @apply focus:border-primary-500 focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-primary-500/25;
     }
 
     /* 表格头 */
@@ -78,7 +156,27 @@
 
     /* 统计卡片 */
     .stat-card {
-        @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-5 flex items-start gap-4;
+        @apply bg-white dark:bg-gray-800 rounded-card border border-gray-200 dark:border-gray-700 shadow-card p-5 flex items-start gap-4;
+    }
+
+    /* 图标按钮基类（表格操作列用，方 8×8 圆角） */
+    .btn-icon {
+        @apply inline-flex items-center justify-center h-8 w-8 rounded-lg transition;
+    }
+
+    /* 表单输入错误态（与 .input 组合使用：class="input input-error"） */
+    .input-error {
+        @apply border-danger-500 dark:border-danger-500/60 focus:border-danger-500 focus:ring-danger-500/25;
+    }
+
+    /* 字段级错误文案 */
+    .field-error-text {
+        @apply mt-1.5 text-sm text-danger-600 dark:text-danger-400;
+    }
+
+    /* 可排序表头（DataTable 用，含 hover 反馈） */
+    .th-sortable {
+        @apply hover:text-gray-900 dark:hover:text-gray-100 transition;
     }
 }
 
