@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
@@ -39,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
      * - app.name        站点名称
      * - app.pagination  列表每页条数
      * - app.copyright   页脚版权信息
+     *
+     * 设置值缓存到「app.settings」键（永久缓存），保存设置时由 SettingController 失效，
+     * 避免每个请求都查 settings 表。
      */
     protected function loadSettings(): void
     {
@@ -47,7 +51,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         try {
-            $settings = Setting::query()->pluck('value', 'key');
+            // 缓存只存标量数组：serializable_classes=false 禁止对象反序列化，
+            // 存 Collection 对象会在读取时变成 __PHP_Incomplete_Class
+            $settings = collect(Cache::rememberForever('app.settings', function () {
+                return Setting::query()->pluck('value', 'key')->all();
+            }));
 
             if ($settings->has('site_name') && $settings['site_name'] !== '') {
                 config(['app.name' => $settings['site_name']]);

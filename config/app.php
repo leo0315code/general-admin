@@ -76,9 +76,12 @@ return [
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
     |
+    | 本项目面向中国大陆用户，默认使用东八区（Asia/Shanghai），
+    | 可通过 .env 的 APP_TIMEZONE 覆盖。
+    |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Shanghai'),
 
     /*
     |--------------------------------------------------------------------------

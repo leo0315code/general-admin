@@ -8,6 +8,8 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 /**
  * 用户导入模板（含表头与示例行）
+ *
+ * 密码留空 = 系统生成随机强密码；角色留空 = editor
  */
 class UsersImportTemplate implements FromArray, WithHeadings, ShouldAutoSize
 {
@@ -19,7 +21,7 @@ class UsersImportTemplate implements FromArray, WithHeadings, ShouldAutoSize
     public function array(): array
     {
         return [
-            ['张三', 'zhangsan@example.com', '123456', 'editor'],
+            ['张三', 'zhangsan@example.com', '', 'editor'],
             ['李四', 'lisi@example.com', '', 'admin'],
         ];
     }

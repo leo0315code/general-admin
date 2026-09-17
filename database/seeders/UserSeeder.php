@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
  * 内置账号：
  * - admin@example.com / password（超级管理员）
  * - editor@example.com / password（编辑）
- * 另生成若干测试用户并随机分配角色。
+ * - 另生成 12 个测试用户：user1 为 admin 角色，user2 ~ user12 为 editor 角色
  */
 class UserSeeder extends Seeder
 {
@@ -39,7 +39,7 @@ class UserSeeder extends Seeder
         );
         $editor->syncRoles(['editor']);
 
-        // 测试用户：随机分配 admin / editor 角色（少量 admin，其余 editor）
+        // 测试用户：user1 授予 admin 角色用于验证多管理员场景，其余为 editor
         foreach (range(1, 12) as $i) {
             $user = User::query()->updateOrCreate(
                 ['email' => "user{$i}@example.com"],

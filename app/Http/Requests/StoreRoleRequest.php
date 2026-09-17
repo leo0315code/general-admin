@@ -14,7 +14,7 @@ class StoreRoleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(\App\Models\User::ROLE_ADMIN) ?? false;
+        return $this->user()?->can('role.manage') ?? false;
     }
 
     /** @return array<string, mixed> */

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DictItem;
 use App\Models\DictType;
+use App\Support\Dict;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -57,6 +58,8 @@ class DictItemController extends Controller
             'remark' => $validated['remark'] ?? null,
         ]);
 
+        Dict::flush();
+
         return redirect()
             ->route('dict-items.index', ['dict_type_id' => $dictType->id])
             ->with('success', '字典项「'.$validated['label'].'」创建成功。');
@@ -91,6 +94,8 @@ class DictItemController extends Controller
             'remark' => $validated['remark'] ?? null,
         ]);
 
+        Dict::flush();
+
         return redirect()
             ->route('dict-items.index', ['dict_type_id' => $dictItem->dict_type_id])
             ->with('success', '字典项「'.$dictItem->label.'」更新成功。');
@@ -101,6 +106,8 @@ class DictItemController extends Controller
         $dictTypeId = $dictItem->dict_type_id;
         $label = $dictItem->label;
         $dictItem->delete();
+
+        Dict::flush();
 
         return redirect()
             ->route('dict-items.index', ['dict_type_id' => $dictTypeId])

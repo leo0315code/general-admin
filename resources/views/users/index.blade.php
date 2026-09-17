@@ -7,26 +7,39 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {{-- 导入（选完文件自动上传） --}}
-                <form method="POST" action="{{ route('users.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
-                    @csrf
-                    <label class="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg cursor-pointer transition">
-                        <x-icon name="heroicon-o-arrow-up-tray" class="h-4 w-4" />
-                        导入
-                        <input type="file" name="file" accept=".xlsx,.xls" class="hidden" required onchange="this.closest('form').submit()">
-                    </label>
-                </form>
-                <a href="{{ route('users.import-template') }}" class="btn-secondary" title="下载导入模板">
-                    <x-icon name="heroicon-o-document-arrow-down" class="h-4 w-4" />
-                    模板
+                @can('users.import')
+                    <form method="POST" action="{{ route('users.import') }}" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+                        @csrf
+                        <label class="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg cursor-pointer transition">
+                            <x-icon name="heroicon-o-arrow-up-tray" class="h-4 w-4" />
+                            导入
+                            <input type="file" name="file" accept=".xlsx,.xls" class="hidden" required onchange="this.closest('form').submit()">
+                        </label>
+                    </form>
+                    <a href="{{ route('users.import-template') }}" class="btn-secondary" title="下载导入模板">
+                        <x-icon name="heroicon-o-document-arrow-down" class="h-4 w-4" />
+                        模板
+                    </a>
+                @endcan
+                @can('users.export')
+                    <a href="{{ route('users.export', request()->query()) }}" class="btn-secondary" title="导出当前搜索结果">
+                        <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
+                        导出
+                    </a>
+                @endcan
+                <a href="{{ route('users.trash') }}" class="btn-secondary relative" title="已删除用户（回收站）">
+                    <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                    回收站
+                    @if ($trashedCount > 0)
+                        <span class="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">{{ $trashedCount }}</span>
+                    @endif
                 </a>
-                <a href="{{ route('users.export') }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
-                    导出
-                </a>
-                <a href="{{ route('users.create') }}" class="btn-primary">
-                    <x-icon name="heroicon-o-plus" class="h-4 w-4" />
-                    新建用户
-                </a>
+                @can('users.create')
+                    <a href="{{ route('users.create') }}" class="btn-primary">
+                        <x-icon name="heroicon-o-plus" class="h-4 w-4" />
+                        新建用户
+                    </a>
+                @endcan
             </div>
         </div>
     </x-slot>
@@ -113,16 +126,18 @@
                                     <x-icon name="heroicon-o-pencil-square" class="h-4 w-4" />
                                     编辑
                                 </a>
-                                @unless ($user->is(auth()->user()))
-                                    <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline" onsubmit="return confirm('确定要删除用户「{{ $user->name }}」吗？');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-danger-ghost" title="删除">
-                                            <x-icon name="heroicon-o-trash" class="h-4 w-4" />
-                                            删除
-                                        </button>
-                                    </form>
-                                @endunless
+                                @can('users.destroy')
+                                    @unless ($user->is(auth()->user()))
+                                        <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline" onsubmit="return confirm('确定要删除用户「{{ $user->name }}」吗？');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-danger-ghost" title="删除">
+                                                <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                                                删除
+                                            </button>
+                                        </form>
+                                    @endunless
+                                @endcan
                             </td>
                         </tr>
                     @empty

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /**
@@ -52,6 +53,9 @@ class SettingController extends Controller
                 ['value' => (string) $value, 'label' => self::DEFAULTS[$key]['label']]
             );
         }
+
+        // 失效设置缓存，使修改立即全局生效（AppServiceProvider 每次启动时按需重建）
+        Cache::forget('app.settings');
 
         return redirect()
             ->route('settings.index')

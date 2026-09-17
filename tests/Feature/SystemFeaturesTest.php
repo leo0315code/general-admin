@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\OperationLog;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -79,6 +81,24 @@ class SystemFeaturesTest extends TestCase
 
         $this->assertDatabaseHas('settings', ['key' => 'site_name', 'value' => '新版站点']);
         $this->assertDatabaseHas('settings', ['key' => 'pagination', 'value' => '20']);
+    }
+
+    public function test_saving_settings_flushes_settings_cache(): void
+    {
+        // 测试环境 boot 时 settings 表尚未迁移，缓存未写入；先模拟「已有缓存」的生产场景
+        Cache::rememberForever('app.settings', fn () => Setting::query()->pluck('value', 'key')->all());
+        $this->assertTrue(Cache::has('app.settings'));
+
+        $this->actingAs($this->admin)
+            ->put(route('settings.update'), [
+                'site_name' => '缓存失效测试',
+                'pagination' => '20',
+                'copyright' => '© 2026',
+            ])
+            ->assertRedirect();
+
+        // 保存后缓存必须失效，确保新值立即全局生效
+        $this->assertFalse(Cache::has('app.settings'));
     }
 
     public function test_editor_cannot_access_settings(): void

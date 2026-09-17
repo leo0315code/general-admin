@@ -13,7 +13,8 @@ class PostSeeder extends Seeder
 {
     public function run(): void
     {
-        $authors = User::query()->limit(5)->pluck('id')->all();
+        // 固定取最早注册的 5 位用户作为作者，避免隐式排序导致每次重建结果不一致
+        $authors = User::query()->orderBy('id')->limit(5)->pluck('id')->all();
 
         if (empty($authors)) {
             return;

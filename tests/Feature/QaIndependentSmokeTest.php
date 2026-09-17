@@ -53,7 +53,7 @@ class QaIndependentSmokeTest extends TestCase
     {
         $admin = $this->admin();
 
-        foreach (['users.index', 'roles.index', 'posts.index'] as $route) {
+        foreach (['users.index', 'roles.index', 'posts.index', 'menus.index', 'logs.index', 'settings.index', 'dict-types.index'] as $route) {
             $this->actingAs($admin)->get(route($route))->assertOk();
         }
     }
@@ -205,9 +205,9 @@ class QaIndependentSmokeTest extends TestCase
         $this->actingAs($user->fresh())->get(route('posts.index'))->assertOk();
     }
 
-    // ---- 记录性：role.manage 与 admin 角色中间件的可见性/可达性不一致 ----
+    // ---- 一致性：菜单可见性与页面可达性严格同源（role.manage）----
 
-    public function test_documents_role_manage_menu_visibility_vs_admin_gate_inconsistency(): void
+    public function test_role_manage_menu_visibility_matches_page_access(): void
     {
         $admin = $this->admin();
         $rolePerm = Permission::query()->where('name', 'role.manage')->firstOrFail();
@@ -220,8 +220,15 @@ class QaIndependentSmokeTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole($role);
 
-        // 现状：侧边栏因 role.manage 显示「角色管理」，但点击因 admin 角色中间件被 403 拒绝
-        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('角色管理');
-        $this->actingAs($user)->get(route('roles.index'))->assertForbidden();
+        // 菜单可见 ⇔ 页面可达：授予 role.manage 后既能看见「角色管理」，也能打开
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('角色管理');
+
+        $this->actingAs($user)
+            ->get(route('roles.index'))
+            ->assertOk()
+            ->assertSee('role-mgr');
     }
 }

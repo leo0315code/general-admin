@@ -26,6 +26,11 @@ class OperationLogger
         'roles.store' => ['角色', '创建', '创建角色'],
         'roles.update' => ['角色', '修改', '更新角色'],
         'roles.destroy' => ['角色', '删除', '删除角色'],
+        // 菜单管理（菜单即权限）
+        'menus.store' => ['菜单', '创建', '创建菜单/权限节点'],
+        'menus.update' => ['菜单', '修改', '更新菜单/权限节点'],
+        'menus.destroy' => ['菜单', '删除', '删除菜单/权限节点'],
+        'menus.toggle-status' => ['菜单', '修改', '切换菜单启用状态'],
         // 文章管理
         'posts.store' => ['文章', '创建', '创建文章'],
         'posts.update' => ['文章', '修改', '更新文章'],

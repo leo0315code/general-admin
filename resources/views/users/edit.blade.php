@@ -77,58 +77,66 @@
                 </div>
 
                 <div class="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-                    <button type="submit" class="btn-primary">
-                        <x-icon name="heroicon-o-check" class="h-4 w-4" />
-                        保存修改
-                    </button>
+                    @can('users.update')
+                        <button type="submit" class="btn-primary">
+                            <x-icon name="heroicon-o-check" class="h-4 w-4" />
+                            保存修改
+                        </button>
+                    @else
+                        <p class="text-sm text-amber-600 dark:text-amber-400">当前角色没有「编辑用户」权限，仅可查看。</p>
+                    @endcan
                 </div>
             </form>
         </div>
 
         {{-- 右侧：重置密码 + 危险操作 --}}
         <div class="space-y-6">
-            <div class="card">
-                <div class="card-header flex items-center gap-2">
-                    <x-icon name="heroicon-o-key" class="h-5 w-5 text-amber-500" />
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">重置密码</h3>
+            @can('users.reset-password')
+                <div class="card">
+                    <div class="card-header flex items-center gap-2">
+                        <x-icon name="heroicon-o-key" class="h-5 w-5 text-amber-500" />
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">重置密码</h3>
+                    </div>
+                    <form method="POST" action="{{ route('users.reset-password', $user) }}" class="p-5 space-y-4" onsubmit="return confirm('确定要为该用户重置密码吗？');">
+                        @csrf
+                        <div>
+                            <label class="label" for="new_password">新密码</label>
+                            <input id="new_password" name="new_password" type="password" class="input" required minlength="8">
+                            <x-input-error :messages="$errors->get('new_password')" class="mt-2" />
+                        </div>
+                        <div>
+                            <label class="label" for="new_password_confirmation">确认新密码</label>
+                            <input id="new_password_confirmation" name="new_password_confirmation" type="password" class="input" required>
+                        </div>
+                        <button type="submit" class="btn-primary w-full justify-center">
+                            <x-icon name="heroicon-o-key" class="h-4 w-4" />
+                            重置密码
+                        </button>
+                    </form>
                 </div>
-                <form method="POST" action="{{ route('users.reset-password', $user) }}" class="p-5 space-y-4" onsubmit="return confirm('确定要为该用户重置密码吗？');">
-                    @csrf
-                    <div>
-                        <label class="label" for="new_password">新密码</label>
-                        <input id="new_password" name="new_password" type="password" class="input" required minlength="8">
-                        <x-input-error :messages="$errors->get('new_password')" class="mt-2" />
-                    </div>
-                    <div>
-                        <label class="label" for="new_password_confirmation">确认新密码</label>
-                        <input id="new_password_confirmation" name="new_password_confirmation" type="password" class="input" required>
-                    </div>
-                    <button type="submit" class="btn-primary w-full justify-center">
-                        <x-icon name="heroicon-o-key" class="h-4 w-4" />
-                        重置密码
-                    </button>
-                </form>
-            </div>
+            @endcan
 
-            @unless ($user->is(auth()->user()))
-                <div class="card border-red-200 dark:border-red-500/30">
-                    <div class="card-header flex items-center gap-2 border-red-100 dark:border-red-500/20">
-                        <x-icon name="heroicon-o-exclamation-triangle" class="h-5 w-5 text-red-500" />
-                        <h3 class="text-base font-semibold text-red-600 dark:text-red-400">危险操作</h3>
+            @can('users.destroy')
+                @unless ($user->is(auth()->user()))
+                    <div class="card border-red-200 dark:border-red-500/30">
+                        <div class="card-header flex items-center gap-2 border-red-100 dark:border-red-500/20">
+                            <x-icon name="heroicon-o-exclamation-triangle" class="h-5 w-5 text-red-500" />
+                            <h3 class="text-base font-semibold text-red-600 dark:text-red-400">危险操作</h3>
+                        </div>
+                        <div class="p-5">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">删除后用户将无法登录（软删除，可在数据库中恢复）。</p>
+                            <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('确定要删除用户「{{ $user->name }}」吗？');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-danger-ghost w-full justify-center border border-red-200 dark:border-red-500/30 rounded-lg py-2">
+                                    <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                                    删除用户
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="p-5">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">删除后用户将无法登录（软删除，可在数据库中恢复）。</p>
-                        <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('确定要删除用户「{{ $user->name }}」吗？');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-danger-ghost w-full justify-center border border-red-200 dark:border-red-500/30 rounded-lg py-2">
-                                <x-icon name="heroicon-o-trash" class="h-4 w-4" />
-                                删除用户
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @endunless
+                @endunless
+            @endcan
         </div>
     </div>
 </x-app-layout>

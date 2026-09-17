@@ -6,9 +6,16 @@
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">内容 CRUD 示例模板，可复制扩展为业务模块</p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('posts.export') }}" class="btn-secondary">
+                <a href="{{ route('posts.export', request()->query()) }}" class="btn-secondary" title="导出当前搜索结果">
                     <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
                     导出
+                </a>
+                <a href="{{ route('posts.trash') }}" class="btn-secondary relative" title="已删除文章（回收站）">
+                    <x-icon name="heroicon-o-trash" class="h-4 w-4" />
+                    回收站
+                    @if ($trashedCount > 0)
+                        <span class="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">{{ $trashedCount }}</span>
+                    @endif
                 </a>
                 <a href="{{ route('posts.create') }}" class="btn-primary">
                     <x-icon name="heroicon-o-plus" class="h-4 w-4" />

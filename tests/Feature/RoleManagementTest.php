@@ -149,15 +149,21 @@ class RoleManagementTest extends TestCase
         $this->assertDatabaseHas('roles', ['id' => $editorRole->id]);
     }
 
-    public function test_editor_cannot_access_role_management(): void
+    public function test_role_without_role_manage_permission_is_forbidden(): void
     {
         $editor = User::query()->where('email', 'editor@example.com')->firstOrFail();
 
-        // 即使 editor 拥有 role.manage 权限（人为授予），admin 角色中间件仍应拦截
-        $editorRole = Role::query()->where('name', 'editor')->firstOrFail();
-        $rolePerm = Permission::query()->where('name', 'role.manage')->firstOrFail();
-        $editorRole->givePermissionTo($rolePerm);
-
+        // editor 默认只有 dashboard.view + post.manage，无 role.manage → 菜单不显示、页面 403
         $this->actingAs($editor)->get(route('roles.index'))->assertForbidden();
+    }
+
+    public function test_role_with_role_manage_permission_can_access_role_management(): void
+    {
+        // 权限语义统一后（路由与菜单同源），授予 role.manage 即可访问角色管理
+        $editor = User::query()->where('email', 'editor@example.com')->firstOrFail();
+        $editorRole = Role::query()->where('name', 'editor')->firstOrFail();
+        $editorRole->givePermissionTo(Permission::query()->where('name', 'role.manage')->firstOrFail());
+
+        $this->actingAs($editor->fresh())->get(route('roles.index'))->assertOk();
     }
 }

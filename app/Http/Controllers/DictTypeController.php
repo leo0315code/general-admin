@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DictType;
+use App\Support\Dict;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,6 +49,8 @@ class DictTypeController extends Controller
             'status' => $request->boolean('status'),
         ]);
 
+        Dict::flush();
+
         return redirect()
             ->route('dict-types.index')
             ->with('success', '字典类型「'.$validated['name'].'」创建成功。');
@@ -81,6 +84,8 @@ class DictTypeController extends Controller
             'status' => $request->boolean('status'),
         ]);
 
+        Dict::flush();
+
         return redirect()
             ->route('dict-types.index')
             ->with('success', '字典类型「'.$dictType->name.'」更新成功。');
@@ -91,6 +96,8 @@ class DictTypeController extends Controller
         // 删除类型会级联删除其字典项
         $name = $dictType->name;
         $dictType->delete();
+
+        Dict::flush();
 
         return redirect()
             ->route('dict-types.index')

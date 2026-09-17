@@ -14,7 +14,7 @@
 
     <x-flash-messages />
 
-    <div class="card max-w-2xl">
+    <div class="card">
         <form method="POST" action="{{ route('roles.update', $role) }}" class="p-6 space-y-6">
             @csrf
             @method('PATCH')
@@ -34,27 +34,8 @@
                 <x-input-error :messages="$errors->get('description')" class="mt-2" />
             </div>
 
-            {{-- 权限分配（多选） --}}
-            <div>
-                <label class="label">权限分配</label>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">勾选该角色可执行的权限；admin 角色自动拥有全部权限。</p>
-                <div class="space-y-2">
-                    @foreach ($permissions as $permission)
-                        <label class="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3.5 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            <input
-                                type="checkbox"
-                                name="permissions[]"
-                                value="{{ $permission->id }}"
-                                class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                                @checked(in_array($permission->id, old('permissions', $rolePermissionIds)))
-                            >
-                            <span class="text-sm text-gray-700 dark:text-gray-200">{{ $permission->label ?? $permission->name }}</span>
-                            <span class="text-xs font-mono text-gray-400 dark:text-gray-500 ml-auto">{{ $permission->name }}</span>
-                        </label>
-                    @endforeach
-                </div>
-                <x-input-error :messages="$errors->get('permissions')" class="mt-2" />
-            </div>
+            {{-- 权限分配：按菜单树勾选（目录 → 菜单 → 按钮） --}}
+            @include('roles.partials.permission-picker')
 
             <div class="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                 <button type="submit" class="btn-primary">

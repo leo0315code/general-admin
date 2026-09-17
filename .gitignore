@@ -1,5 +1,6 @@
 *.log
 .DS_Store
+/.workbuddy/
 .env
 .env.backup
 .env.production

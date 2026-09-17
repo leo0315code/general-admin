@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * 认证/授权服务提供者
@@ -17,6 +17,9 @@ use Spatie\Permission\Models\Permission;
  * 采用 Gate::before 而非逐个 Gate::define 注册的好处：
  * 权限在运行时（Seeder / 后台）创建后立即可用，不依赖服务启动时权限表状态，
  * 且 `$user->can('user.manage')` 与 Blade `@can('user.manage')` 可直接使用。
+ *
+ * 性能：权限清单取自 Spatie 的 PermissionRegistrar 缓存（默认缓存 24 小时，
+ * 权限/角色变更时由 Spatie 自动失效），不再每次能力判定都查 permissions 表。
  */
 class AuthServiceProvider extends ServiceProvider
 {
@@ -33,8 +36,10 @@ class AuthServiceProvider extends ServiceProvider
                 return true;
             }
 
-            // 该能力是否为权限表中已定义的权限
-            if (Permission::query()->where('name', $ability)->exists()) {
+            // 该能力是否为权限表中已定义的权限（走 Spatie 缓存集合，避免每请求查表）
+            $permissions = app(PermissionRegistrar::class)->getPermissions();
+
+            if ($permissions->contains('name', $ability)) {
                 return $user->hasPermissionTo($ability);
             }
 

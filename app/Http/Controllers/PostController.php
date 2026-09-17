@@ -34,7 +34,9 @@ class PostController extends Controller
             ->paginate(config('app.pagination', self::PER_PAGE))
             ->withQueryString();
 
-        return view('posts.index', compact('posts', 'keyword', 'status'));
+        $trashedCount = Post::query()->onlyTrashed()->count();
+
+        return view('posts.index', compact('posts', 'keyword', 'status', 'trashedCount'));
     }
 
     /** 创建文章表单 */
@@ -112,11 +114,50 @@ class PostController extends Controller
             ->with('success', "文章「{$post->title}」已删除（软删除）。");
     }
 
-    /** 导出文章数据（Excel） */
-    public function export()
+    /** 回收站：已删除文章列表（分页 + 搜索 + 状态筛选） */
+    public function trash(Request $request): View
+    {
+        $keyword = $request->query('search');
+        $status = $request->query('status');
+
+        $posts = Post::query()
+            ->onlyTrashed()
+            ->with('user:id,name')
+            ->search($keyword)
+            ->ofStatus($status)
+            ->latest('id')
+            ->paginate(config('app.pagination', self::PER_PAGE))
+            ->withQueryString();
+
+        return view('posts.trash', compact('posts', 'keyword', 'status'));
+    }
+
+    /** 还原软删除文章 */
+    public function restore(int $id): RedirectResponse
+    {
+        $post = Post::query()->onlyTrashed()->findOrFail($id);
+        $post->restore();
+
+        return back()
+            ->with('success', "文章「{$post->title}」已还原。");
+    }
+
+    /** 彻底删除文章（不可恢复） */
+    public function forceDestroy(int $id): RedirectResponse
+    {
+        $post = Post::query()->onlyTrashed()->findOrFail($id);
+        $title = $post->title;
+        $post->forceDelete();
+
+        return back()
+            ->with('success', "文章「{$title}」已彻底删除，无法恢复。");
+    }
+
+    /** 导出文章数据（Excel，跟随当前搜索/状态筛选） */
+    public function export(Request $request)
     {
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\PostsExport,
+            new \App\Exports\PostsExport($request->query('search'), $request->query('status')),
             '文章数据-'.date('YmdHis').'.xlsx'
         );
     }

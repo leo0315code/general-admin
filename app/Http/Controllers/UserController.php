@@ -10,6 +10,7 @@ use App\Imports\UsersImport;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -42,12 +43,16 @@ class UserController extends Controller
             ->paginate(config('app.pagination', self::PER_PAGE))
             ->withQueryString();
 
-        return view('users.index', compact('users', 'keyword'));
+        $trashedCount = User::query()->onlyTrashed()->count();
+
+        return view('users.index', compact('users', 'keyword', 'trashedCount'));
     }
 
     /** 创建用户表单 */
     public function create(): View
     {
+        Gate::authorize('users.create');
+
         $roles = Role::query()->orderBy('id')->get();
 
         return view('users.create', compact('roles'));
@@ -56,6 +61,8 @@ class UserController extends Controller
     /** 保存新用户并分配角色 */
     public function store(StoreUserRequest $request): RedirectResponse
     {
+        Gate::authorize('users.create');
+
         $user = User::query()->create([
             'name' => $request->validated('name'),
             'email' => $request->validated('email'),
@@ -83,6 +90,8 @@ class UserController extends Controller
     /** 更新用户资料与角色 */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        Gate::authorize('users.update');
+
         $data = $request->safe()->only(['name', 'email']);
 
         // 仅在填写新密码时更新密码
@@ -101,6 +110,8 @@ class UserController extends Controller
     /** 重置用户密码（不修改其它资料） */
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
+        Gate::authorize('users.reset-password');
+
         $request->validate([
             'new_password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
@@ -119,6 +130,8 @@ class UserController extends Controller
     /** 删除用户（软删除；禁止删除自己） */
     public function destroy(User $user): RedirectResponse
     {
+        Gate::authorize('users.destroy');
+
         if ($user->is(auth()->user())) {
             return redirect()
                 ->route('users.index')
@@ -132,21 +145,75 @@ class UserController extends Controller
             ->with('success', "用户「{$user->name}」已删除（软删除）。");
     }
 
-    /** 导出用户数据（Excel） */
-    public function export()
+    /** 回收站：已删除用户列表（分页 + 搜索） */
+    public function trash(Request $request): View
     {
-        return Excel::download(new UsersExport, '用户数据-'.date('YmdHis').'.xlsx');
+        $keyword = $request->query('search');
+
+        $users = User::query()
+            ->onlyTrashed()
+            ->with('roles:id,name')
+            ->when($keyword, function ($query, string $keyword) {
+                $query->where(function ($query) use ($keyword) {
+                    $query->where('name', 'like', "%{$keyword}%")
+                        ->orWhere('email', 'like', "%{$keyword}%");
+                });
+            })
+            ->latest('id')
+            ->paginate(config('app.pagination', self::PER_PAGE))
+            ->withQueryString();
+
+        return view('users.trash', compact('users', 'keyword'));
+    }
+
+    /** 还原软删除用户 */
+    public function restore(int $id): RedirectResponse
+    {
+        Gate::authorize('user.manage');
+
+        $user = User::query()->onlyTrashed()->findOrFail($id);
+        $user->restore();
+
+        return back()
+            ->with('success', "用户「{$user->name}」已还原，可正常登录。");
+    }
+
+    /** 彻底删除用户（不可恢复） */
+    public function forceDestroy(int $id): RedirectResponse
+    {
+        Gate::authorize('user.manage');
+
+        $user = User::query()->onlyTrashed()->findOrFail($id);
+        $name = $user->name;
+        $user->forceDelete();
+
+        return back()
+            ->with('success', "用户「{$name}」已彻底删除，无法恢复。");
+    }
+
+    /** 导出用户数据（Excel，跟随当前搜索条件） */
+    public function export(Request $request)
+    {
+        Gate::authorize('users.export');
+
+        $keyword = $request->query('search');
+
+        return Excel::download(new UsersExport($keyword), '用户数据-'.date('YmdHis').'.xlsx');
     }
 
     /** 下载用户导入模板 */
     public function importTemplate()
     {
+        Gate::authorize('users.import');
+
         return Excel::download(new UsersImportTemplate, '用户导入模板.xlsx');
     }
 
     /** 批量导入用户（Excel） */
     public function import(Request $request): RedirectResponse
     {
+        Gate::authorize('users.import');
+
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls'],
         ], [

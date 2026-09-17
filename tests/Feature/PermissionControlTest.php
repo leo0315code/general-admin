@@ -69,10 +69,11 @@ class PermissionControlTest extends TestCase
         $this->actingAs($editor)->get(route('users.create'))->assertForbidden();
     }
 
-    public function test_role_middleware_blocks_non_admin_roles(): void
+    public function test_role_manage_permission_blocks_user_without_it(): void
     {
         $editor = $this->editor();
 
+        // editor 只被授予 dashboard.view + post.manage，角色管理按 role.manage 权限拦截
         $this->actingAs($editor)->get(route('roles.index'))->assertForbidden();
     }
 
