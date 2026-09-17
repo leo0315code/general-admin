@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordSetupController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +42,12 @@ Route::prefix(config('app.admin_prefix'))->group(function () {
         Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
         Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+        // 首次登录强制改密（登录成功时 must_change_password=1 会跳转到这里）
+        Route::get('password-setup', [PasswordSetupController::class, 'show'])
+            ->name('password.setup');
+        Route::post('password-setup', [PasswordSetupController::class, 'update'])
+            ->name('password.setup.update');
 
         Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
             ->name('logout');

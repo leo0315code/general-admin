@@ -36,7 +36,7 @@ Route::get('/', fn () => view('welcome'));
 // - menu.manage      菜单管理      - log.manage       操作日志
 // - dict.manage      数据字典      - settings.manage  系统设置
 // 页面内的按钮级权限（如 users.create / posts.destroy）同样来自 menus 表的 button 节点。
-Route::prefix($adminPrefix)->middleware(['auth', 'verified'])->group(function () {
+Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed'])->group(function () {
     // 仪表盘：需要 dashboard.view 权限
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
@@ -52,6 +52,9 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified'])->group(function ()
         Route::resource('users', UserController::class)->except(['show']);
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])
             ->name('users.reset-password');
+        // 账号启停
+        Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
+            ->name('users.toggle-status');
         // Excel 导入导出
         Route::get('users/export', [UserController::class, 'export'])->name('users.export');
         Route::get('users/import-template', [UserController::class, 'importTemplate'])->name('users.import-template');

@@ -84,6 +84,8 @@
                         <th class="th">姓名</th>
                         <th class="th">邮箱</th>
                         <th class="th">角色</th>
+                        <th class="th">状态</th>
+                        <th class="th">最后登录</th>
                         <th class="th">注册时间</th>
                         <th class="th text-right">操作</th>
                     </tr>
@@ -120,12 +122,50 @@
                                     @endforelse
                                 </div>
                             </td>
-                            <td class="td text-gray-600 dark:text-gray-300">{{ $user->created_at->format('Y-m-d H:i') }}</td>
+                            <td class="td">
+                                @if ($user->isActive())
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                                        <x-icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
+                                        启用
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+                                        <x-icon name="heroicon-o-x-circle" class="h-3.5 w-3.5" />
+                                        停用
+                                    </span>
+                                @endif
+                                @if ($user->must_change_password)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300" title="首次登录需修改密码">
+                                        <x-icon name="heroicon-o-key" class="h-3.5 w-3.5" />
+                                        待改密
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                @if ($user->last_login_at)
+                                    {{ $user->last_login_at->format('Y-m-d H:i') }}
+                                    <span class="block text-xs text-gray-400 dark:text-gray-500">{{ $user->last_login_ip ?? '—' }}</span>
+                                @else
+                                    <span class="text-gray-400 dark:text-gray-500">从未登录</span>
+                                @endif
+                            </td>
+                            <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ $user->created_at->format('Y-m-d H:i') }}</td>
                             <td class="td text-right whitespace-nowrap">
                                 <a href="{{ route('users.edit', $user) }}" class="btn-ghost" title="编辑">
                                     <x-icon name="heroicon-o-pencil-square" class="h-4 w-4" />
                                     编辑
                                 </a>
+                                @unless ($user->is(auth()->user()))
+                                    <form method="POST" action="{{ route('users.toggle-status', $user) }}" class="inline"
+                                          onsubmit="return confirm('确定要{{ $user->isActive() ? '停用' : '启用' }}用户「{{ $user->name }}」吗？');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn-ghost {{ $user->isActive() ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}" title="{{ $user->isActive() ? '停用（无法登录）' : '启用' }}">
+                                            <x-icon :name="$user->isActive() ? 'heroicon-o-pause' : 'heroicon-o-play'" class="h-4 w-4" />
+                                            {{ $user->isActive() ? '停用' : '启用' }}
+                                        </button>
+                                    </form>
+                                @endunless
                                 @can('users.destroy')
                                     @unless ($user->is(auth()->user()))
                                         <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline" onsubmit="return confirm('确定要删除用户「{{ $user->name }}」吗？');">
@@ -142,7 +182,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-12 text-center">
+                            <td colspan="8" class="px-5 py-12 text-center">
                                 <x-icon name="heroicon-o-users" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
                                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">没有找到用户</p>
                             </td>

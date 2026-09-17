@@ -89,8 +89,57 @@
             </form>
         </div>
 
-        {{-- 右侧：重置密码 + 危险操作 --}}
+        {{-- 右侧：账号信息 + 重置密码 + 危险操作 --}}
         <div class="space-y-6">
+            {{-- 账号状态与登录痕迹 --}}
+            <div class="card">
+                <div class="card-header flex items-center gap-2">
+                    <x-icon name="heroicon-o-user-circle" class="h-5 w-5 text-indigo-500" />
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">账号信息</h3>
+                </div>
+                <div class="p-5 space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">账号状态</span>
+                        <span>
+                            @if ($user->isActive())
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                                    <x-icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
+                                    启用
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+                                    <x-icon name="heroicon-o-x-circle" class="h-3.5 w-3.5" />
+                                    停用
+                                </span>
+                            @endif
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">最后登录</span>
+                        <span class="text-gray-700 dark:text-gray-200">
+                            {{ $user->last_login_at?->format('Y-m-d H:i') ?? '从未登录' }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">最后登录 IP</span>
+                        <span class="font-mono text-xs text-gray-700 dark:text-gray-200">{{ $user->last_login_ip ?? '—' }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500 dark:text-gray-400">强制改密</span>
+                        <span>
+                            @if ($user->must_change_password)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                                    <x-icon name="heroicon-o-key" class="h-3.5 w-3.5" />
+                                    下次登录需改密
+                                </span>
+                            @else
+                                <span class="text-gray-400 dark:text-gray-500">否</span>
+                            @endif
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             @can('users.reset-password')
                 <div class="card">
                     <div class="card-header flex items-center gap-2">

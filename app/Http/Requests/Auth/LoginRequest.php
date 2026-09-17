@@ -67,9 +67,34 @@ class LoginRequest extends FormRequest
 
         $username = (string) $this->input('username');
 
-        $credentials = filter_var($username, FILTER_VALIDATE_EMAIL)
-            ? ['email' => $username, 'password' => (string) $this->input('password')]
-            : ['name' => $username, 'password' => (string) $this->input('password')];
+        $field = filter_var($username, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+
+        $credentials = [
+            $field => $username,
+            'password' => (string) $this->input('password'),
+        ];
+
+        // 停用校验：账号 status=0 不允许登录（即使密码正确）
+        $account = \App\Models\User::query()
+            ->where($field, $username)
+            ->first();
+
+        if ($account && ! $account->isActive()) {
+            \App\Support\OperationLogger::log(
+                $account->id,
+                $account->name,
+                'POST',
+                '登录失败',
+                '账号已停用',
+                '登录',
+                $this->ip(),
+                substr((string) $this->userAgent(), 0, 500)
+            );
+
+            throw ValidationException::withMessages([
+                'username' => '该账号已被停用，请联系管理员。',
+            ]);
+        }
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());

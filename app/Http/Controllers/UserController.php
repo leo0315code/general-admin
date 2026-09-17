@@ -120,11 +120,32 @@ class UserController extends Controller
             'new_password.confirmed' => '两次输入的新密码不一致。',
         ]);
 
-        $user->update(['password' => Hash::make($request->input('new_password'))]);
+        $user->update([
+            'password' => Hash::make($request->input('new_password')),
+            // 管理员重置密码后，用户下次登录需先改密
+            'must_change_password' => true,
+        ]);
 
         return redirect()
             ->route('users.edit', $user)
-            ->with('success', "用户「{$user->name}」的密码已重置。");
+            ->with('success', "用户「{$user->name}」的密码已重置，下次登录需修改密码。");
+    }
+
+    /** 切换账号启停状态（禁止停用自己） */
+    public function toggleStatus(User $user): RedirectResponse
+    {
+        Gate::authorize('user.manage');
+
+        if ($user->is(auth()->user())) {
+            return back()->with('error', '不能停用当前登录的账号。');
+        }
+
+        $user->update(['status' => ! $user->isActive()]);
+
+        return back()
+            ->with('success', $user->isActive()
+                ? "用户「{$user->name}」已启用。"
+                : "用户「{$user->name}」已停用，将无法登录。");
     }
 
     /** 删除用户（软删除；禁止删除自己） */

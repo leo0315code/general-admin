@@ -47,7 +47,17 @@
 
 **实测**：`php artisan test` → **165 passed (532 assertions)**（新增回收站 6 + 错误页 5 + 导出筛选 6）；`view:cache` 编译通过。生产库（MySQL + database 缓存驱动）实测 `dict()`/settings/时区正常。
 
-**仍未处理（按原顺序）**：P0-5 重置密码策略/首登改密（导入侧随机密码已做）、第 2 批的事务/失败行下载/生产配置基线，以及第四~六节的 P1/P2/P3 各项（账号启停、附件上传、PostPolicy、admin 保护、列表能力、索引、日志治理、通知队列、定时任务、部署文档等）。
+**已完成（2026-09-17 · P1 账号生命周期）**
+
+| 原编号 | 内容 | 落点 |
+| --- | --- | --- |
+| P1-账号启停 | 迁移 `users.status`（1启用/0停用）；`LoginRequest::authenticate` 登录前校验停用并记审计；`UserController::toggleStatus`（不能停用自己）+ 列表状态徽章/启停按钮 + 编辑页账号信息卡 | 迁移 `2026_09_17_000003`、`LoginRequest`、`UserController`、`views/users/*` |
+| P1-登录痕迹 | 迁移 `last_login_at`/`last_login_ip`；登录成功 `forceFill` 记录；列表/编辑页展示 | `AuthenticatedSessionController::store` |
+| P0-5(首登改密) | 迁移 `must_change_password`；登录成功跳 `password-setup`；`EnsurePasswordChanged` 中间件挂后台路由组（alias `password.changed`）；管理员重置密码自动置位；改密页设置新密码后清除标志 | `PasswordSetupController`、`EnsurePasswordChanged`、`views/auth/password-setup.blade.php`、`routes/auth.php` |
+
+**实测**：`php artisan test` → **172 passed (558 assertions)**（新增 AccountLifecycleTest 7 用例）；`view:cache` 编译通过；本地 MySQL 已 migrate 并实测字段/路由。
+
+**仍未处理（按原顺序）**：第 2 批剩余的事务/失败行下载/生产配置基线，以及第四~六节的 P1/P2/P3 各项（附件上传、PostPolicy、admin 保护、列表能力、索引、日志治理、通知队列、定时任务、部署文档等）。
 
 ---
 
@@ -101,7 +111,7 @@
 | --- | --- | --- |
 | 中文错误页 | ✅ **已落地**：`resources/views/errors/{403,404,419,429,500}.blade.php` 全中文 + 暗色模式 | — |
 | 回收站 | ✅ **已落地**：`users`/`posts` trash/restore/force-delete 全链路 + 已删计数入口 + 确认弹窗 | — |
-| 账号启停与登录痕迹 | `users` 表仅 name/email/password/软删字段，无 `status`、无 `last_login_at`/`last_login_ip` | 人员离职只能删账号；无法回答"最后登录时间" |
+| 账号启停与登录痕迹 | ✅ **已落地**：`users.status`（启停/停用拦截登录）+ `last_login_at`/`last_login_ip` + `must_change_password`（首登强制改密），列表/编辑页展示，测试覆盖 | — |
 | 权限管理页 | ✅ **已落地**：`menus` 表 + 菜单管理页（三级树）+ 角色授权按树勾选，权限由菜单自动同步 | — |
 | 数据范围授权 | `PostController` 的 `edit/update/destroy/toggleStatus` 均无归属校验，只靠 `permission:post.manage` | 任何拥有该权限的编辑可改/删他人文章；应引入 `PostPolicy`（`viewAny/view/update/delete`） |
 | 超级管理员保护 | `AuthServiceProvider.php:30-34` 中 admin 直接 `return true`；`UserController::destroy` 只挡"删除自己" | 无"最后一个 admin 不可删除/降级"约束，无二次确认与审计 |

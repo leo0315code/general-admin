@@ -47,10 +47,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // 记录登录痕迹（最后登录时间 / IP）
+        $user = $request->user();
+        $user?->forceFill([
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+        ])->save();
+
         // 记录登录成功
         \App\Support\OperationLogger::log(
-            $request->user()?->id,
-            $request->user()?->name,
+            $user?->id,
+            $user?->name,
             'POST',
             '登录',
             '用户登录成功',
@@ -58,6 +65,11 @@ class AuthenticatedSessionController extends Controller
             $request->ip(),
             substr((string) $request->userAgent(), 0, 500)
         );
+
+        // 首次登录强制改密：跳转改密页
+        if ($user && $user->must_change_password) {
+            return redirect()->route('password.setup');
+        }
 
         // 仅信任属于当前后台前缀的 intended URL（防止旧会话遗留的旧路径/外部 URL 导致 404），
         // 其余情况一律回到仪表盘。
