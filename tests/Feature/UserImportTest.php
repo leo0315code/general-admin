@@ -82,16 +82,16 @@ class UserImportTest extends TestCase
 
     public function test_import_skips_duplicate_name_and_does_not_500(): void
     {
-        // 数据库已有「管理员」（种子数据），导入同名行不得撞唯一索引 500
+        // 数据库已有「leo0315」（种子数据），导入同名行不得撞唯一索引 500
         $response = $this->postImport([
-            ['管理员', 'dup-admin@example.com', '', 'editor'],
+            ['leo0315', 'dup-admin@example.com', '', 'editor'],
         ]);
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('users', ['email' => 'dup-admin@example.com']);
         $this->assertSame(0, UsersImport::$created);
         $this->assertCount(1, UsersImport::$errors);
-        $this->assertStringContainsString('姓名 管理员 已存在', UsersImport::$errors[0]);
+        $this->assertStringContainsString('姓名 leo0315 已存在', UsersImport::$errors[0]);
     }
 
     public function test_import_skips_duplicate_soft_deleted_user(): void
@@ -148,7 +148,7 @@ class UserImportTest extends TestCase
     {
         // 混排：1 行重复 + 1 行正常 → 正常行仍应导入成功
         $response = $this->postImport([
-            ['管理员', 'dup@example.com', '', 'editor'],
+            ['leo0315', 'dup@example.com', '', 'editor'],
             ['孙七', 'sunqi@example.com', '', 'editor'],
         ]);
 

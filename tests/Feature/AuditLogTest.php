@@ -41,7 +41,7 @@ class AuditLogTest extends TestCase
         $this->assertDatabaseHas('operation_logs', [
             'module' => '用户',
             'action' => '创建',
-            'username' => '管理员',
+            'username' => 'leo0315',
         ]);
     }
 
@@ -53,7 +53,7 @@ class AuditLogTest extends TestCase
             'module' => '用户',
             'action' => '导出',
             'method' => 'GET',
-            'username' => '管理员',
+            'username' => 'leo0315',
         ]);
     }
 

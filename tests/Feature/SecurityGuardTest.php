@@ -152,12 +152,12 @@ class SecurityGuardTest extends TestCase
         // 保留 admin 角色 → 编辑允许（不误伤正常资料更新）
         $this->actingAs($operator)
             ->patch(route('users.update', $admin), [
-                'name' => '管理员（改名）',
+                'name' => 'leo0315（改名）',
                 'email' => $admin->email,
                 'roles' => [$adminRole->id],
             ])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('users', ['id' => $admin->id, 'name' => '管理员（改名）']);
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'name' => 'leo0315（改名）']);
     }
 }

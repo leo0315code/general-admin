@@ -190,7 +190,12 @@
             </main>
         </div>
 
-        {{-- 全局 Toast 容器 --}}
-        <x-toast />
+        {{-- 全局 Vue 交互壳（Toast / ConfirmModal）：Alpine 的 toast/confirmModal store 已桥接到此 --}}
+        <div
+            data-vue-app
+            data-component="app-shell"
+            data-props='@json(["userName" => Auth::user()->name])'
+            x-ignore
+        ></div>
     </body>
 </html>

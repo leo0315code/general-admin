@@ -3,31 +3,30 @@ import Alpine from 'alpinejs';
 window.Alpine = Alpine;
 
 /**
- * 全局 Toast（轻提示）store —— 右上角堆叠，3s 自动消失
+ * 全局事件桥 → Vue AppShell（Vue3 渐进式迁移）
+ * ------------------------------------------------------------
+ * Alpine 的 toast / confirmModal store 改为转发 window 事件，
+ * 由 Vue AppShell 渲染的 Toast / ConfirmModal 实际展示。
+ * 现有 Blade 页面调用语法不变，交互内核已切 Vue。
+ * 事件缓冲：Vue 挂载前（Alpine 初始化期间）触发的事件先入队，
+ * AppShell 挂载后消费，避免 flash toast 等丢失。
+ */
+window.__appEvents = [];
+
+function emitAppEvent(name, detail = {}) {
+    window.__appEvents.push({ name, detail, time: Date.now() });
+    window.dispatchEvent(new CustomEvent(name, { detail }));
+}
+
+/**
+ * 全局 Toast（桥接 Vue Toast）
  *
  * 用法：Alpine.store('toast').show('success', '操作成功')
  *       Alpine.store('toast').success('...') / .error('...')
  */
 Alpine.store('toast', {
-    items: [],
-    nextId: 1,
-
     show(type, message, duration = 3000) {
-        const id = this.nextId++;
-        this.items.push({ id, type: type === 'error' ? 'error' : 'success', message, visible: false });
-
-        const item = this.items[this.items.length - 1];
-
-        Alpine.nextTick(() => {
-            item.visible = true;
-        });
-
-        setTimeout(() => {
-            item.visible = false;
-            setTimeout(() => {
-                this.items = this.items.filter((t) => t.id !== id);
-            }, 200);
-        }, duration);
+        emitAppEvent('app:toast', { type, message, duration });
     },
 
     success(message) {
@@ -40,44 +39,31 @@ Alpine.store('toast', {
 });
 
 /**
- * 全局确认弹窗 store（UI 现代化重构 · SEC-1）
+ * 全局确认弹窗 store（桥接 Vue ConfirmModal）
  *
  * 触发按钮：
  *   @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))"
  * 表单需带 data-confirm-title / data-confirm-message（可选 data-confirm-variant="primary|danger"）。
- * 确认后：Alpine.store('confirmModal').submit() → form.submit()（真实表单，CSRF/Gate 不变）
+ * 确认后由 Vue ConfirmModal 执行 form.submit()（真实表单，CSRF/Gate 不变）
  */
 Alpine.store('confirmModal', {
-    form: null,
-    title: '确定继续吗？',
-    message: '',
-    confirmText: '确认',
-    cancelText: '取消',
-    variant: 'danger',
-
     open(form) {
-        this.form = form;
-        this.title = form?.dataset.confirmTitle || '确定继续吗？';
-        this.message = form?.dataset.confirmMessage || '';
-        this.confirmText = form?.dataset.confirmText || '确认';
-        this.cancelText = form?.dataset.cancelText || '取消';
-        this.variant = form?.dataset.confirmVariant || 'danger';
-
-        window.dispatchEvent(new CustomEvent('open-confirm-modal', { detail: { name: 'confirm-action' } }));
-    },
-
-    submit() {
-        const form = this.form;
-        this.close();
-
-        if (form) {
-            form.submit();
-        }
+        emitAppEvent('app:confirm', {
+            form,
+            title: form?.dataset.confirmTitle || '确定继续吗？',
+            message: form?.dataset.confirmMessage || '',
+            confirmText: form?.dataset.confirmText || '确认',
+            cancelText: form?.dataset.cancelText || '取消',
+            variant: form?.dataset.confirmVariant || 'danger',
+        });
     },
 
     close() {
-        this.form = null;
-        window.dispatchEvent(new CustomEvent('close-confirm-modal', { detail: { name: 'confirm-action' } }));
+        emitAppEvent('app:confirm-close', {});
+    },
+
+    submit() {
+        // 兼容旧模板引用：确认由 Vue ConfirmModal 处理 form.submit()
     },
 });
 
@@ -173,3 +159,16 @@ document.addEventListener('alpine:init', () => {
 });
 
 Alpine.start();
+
+/**
+ * Vue 3 渐进式挂载（组件化迁移）：
+ * Blade 端 <div data-vue-app data-component="xxx" :data-props='@json(...)'>
+ * 由 mountVueApps() 扫描挂载。迁移期与 Alpine 共存，Vue 挂载根请加 x-ignore。
+ */
+import { mountVueApps } from './vue/bootstrap';
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountVueApps);
+} else {
+    mountVueApps();
+}

@@ -37,16 +37,16 @@ class ExportFilterTest extends TestCase
 
     public function test_user_export_follows_keyword(): void
     {
-        $export = new UsersExport('管理员');
+        $export = new UsersExport('leo0315');
 
         $this->assertSame(1, $export->query()->count());
-        $this->assertSame('管理员', $export->query()->first()->name);
+        $this->assertSame('leo0315', $export->query()->first()->name);
     }
 
     public function test_user_export_route_accepts_search_param(): void
     {
         $this->actingAs($this->admin())
-            ->get(route('users.export', ['search' => '管理员']))
+            ->get(route('users.export', ['search' => 'leo0315']))
             ->assertOk()
             ->assertHeaderContains('content-type', 'spreadsheetml');
     }

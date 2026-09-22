@@ -111,7 +111,7 @@ php artisan serve
 
 | 账号 | 密码 | 登录方式 | 角色 | 权限 |
 | --- | --- | --- | --- | --- |
-| 管理员 / admin@example.com | password | 用户名或邮箱 | 超级管理员（admin） | 全部 23 项权限 |
+| leo0315 / admin@example.com | password | 用户名或邮箱 | 超级管理员（admin） | 全部 23 项权限 |
 | 编辑 / editor@example.com | password | 用户名或邮箱 | 编辑（editor） | dashboard.view、post.manage、posts.create/update/destroy |
 | 测试用户1 ~ 测试用户12 | password | 用户名 | user1=admin，其余 editor（固定规则） | 同上 |
 

@@ -16,8 +16,21 @@
 
 <button
     type="{{ $type }}"
-    x-data="{ loading: false, loadingText: @js($loadingText) }"
-    @click="loading = true"
+    x-data="{
+        loading: false,
+        loadingText: @js($loadingText),
+        // 点击后等浏览器完成 HTML5 约束校验再进入 loading：
+        // 校验未通过时（如必填项为空）表单不会提交，按钮也不能锁死转圈
+        handleClick() {
+            this.$nextTick(() => {
+                const form = this.$el.form;
+                if (!form || form.checkValidity()) {
+                    this.loading = true;
+                }
+            });
+        }
+    }"
+    @click="handleClick"
     :disabled="loading"
     :class="loading ? 'opacity-70 cursor-wait' : ''"
     {{ $attributes->merge(['class' => $classes]) }}

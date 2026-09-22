@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
  * 用户种子数据（基于 spatie/laravel-permission）
  *
  * 内置账号：
- * - admin@example.com / password（超级管理员）
+ * - leo0315 / admin@example.com / password（超级管理员）
  * - editor@example.com / password（编辑）
  * - 另生成 12 个测试用户：user1 为 admin 角色，user2 ~ user12 为 editor 角色
  */
@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
         $admin = User::query()->updateOrCreate(
             ['email' => 'admin@example.com'],
             [
-                'name' => '管理员',
+                'name' => 'leo0315',
                 'password' => 'password',
                 'email_verified_at' => now(),
             ]
