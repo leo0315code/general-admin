@@ -10,8 +10,10 @@ import LogsIndex from './components/LogsIndex.vue';
 import LoginPage from './components/LoginPage.vue';
 import MenusIndex from './components/MenusIndex.vue';
 import PostsIndex from './components/PostsIndex.vue';
+import PostsTrash from './components/PostsTrash.vue';
 import RolesIndex from './components/RolesIndex.vue';
 import UsersIndex from './components/UsersIndex.vue';
+import UsersTrash from './components/UsersTrash.vue';
 
 const registry = {
     'app-shell': AppShell,
@@ -21,8 +23,10 @@ const registry = {
     login: LoginPage,
     'menus-index': MenusIndex,
     'posts-index': PostsIndex,
+    'posts-trash': PostsTrash,
     'roles-index': RolesIndex,
     'users-index': UsersIndex,
+    'users-trash': UsersTrash,
 };
 
 export function mountVueApps() {

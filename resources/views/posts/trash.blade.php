@@ -12,80 +12,36 @@
 
     <x-flash-messages />
 
+    @php
+        // 文章回收站 Vue 组件 props（搜索/筛选/表格由 Vue 渲染，分页保留 Blade）
+        $postsTrashProps = [
+            'keyword' => $keyword ?? '',
+            'status' => $status ?? '',
+            'posts' => $posts->map(fn ($post) => [
+                'id' => $post->id,
+                'title' => $post->title,
+                'author' => $post->user->name ?? null,
+                'is_published' => $post->isPublished(),
+                'deleted_at' => $post->deleted_at->format('Y-m-d H:i'),
+            ])->values(),
+            'sort' => $sort ?? 'id',
+            'sortDir' => $dir ?? 'desc',
+            'currentUrl' => url()->current(),
+            'query' => request()->query(),
+            'postBase' => rtrim(route('posts.index'), '/'),
+        ];
+    @endphp
+
     <div class="card">
-        {{-- 搜索栏 + 状态筛选 --}}
-        <div class="card-header">
-            <form method="GET" action="{{ route('posts.trash') }}" class="flex flex-col sm:flex-row gap-3">
-                <div class="relative flex-1 sm:max-w-xs">
-                    <x-icon name="heroicon-o-magnifying-glass" class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="search" name="search" value="{{ $keyword }}" placeholder="搜索已删除的标题…" class="input pl-9">
-                </div>
-                <select name="status" class="input sm:w-40">
-                    <option value="">全部状态</option>
-                    <option value="draft" @selected($status === 'draft')>草稿</option>
-                    <option value="published" @selected($status === 'published')>已发布</option>
-                </select>
-                <div class="flex gap-2">
-                    <button type="submit" class="btn-secondary">筛选</button>
-                    @if ($keyword || $status)
-                        <a href="{{ route('posts.trash') }}" class="btn-secondary">清除</a>
-                    @endif
-                </div>
-            </form>
-        </div>
+        {{-- 搜索/筛选 + 表格（Vue 组件 PostsTrash） --}}
+        <div
+            data-vue-app
+            data-component="posts-trash"
+            data-props='{!! vue_props($postsTrashProps) !!}'
+            x-ignore
+        ></div>
 
-        {{-- 已删除文章表格 --}}
-        <x-data-table
-            :columns="[
-                ['key' => 'id', 'label' => 'ID', 'sortable' => true],
-                ['key' => 'title', 'label' => '标题', 'sortable' => true],
-                ['key' => null, 'label' => '作者'],
-                ['key' => 'status', 'label' => '状态', 'sortable' => true],
-                ['key' => 'created_at', 'label' => '删除时间', 'sortable' => true],
-                ['key' => null, 'label' => '操作', 'align' => 'right'],
-            ]"
-            :sort="$sort ?? null"
-            :sort-dir="$dir ?? 'desc'"
-        >
-            <x-slot name="rows">
-                @forelse ($posts as $post)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                        <td class="td text-gray-500 dark:text-gray-400">{{ $post->id }}</td>
-                        <td class="td font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{{ $post->title }}</td>
-                        <td class="td text-gray-600 dark:text-gray-300">{{ $post->user->name ?? '—' }}</td>
-                        <td class="td">
-                            @if ($post->isPublished())
-                                <x-status-badge type="success" icon="heroicon-o-check-circle">已发布</x-status-badge>
-                            @else
-                                <x-status-badge type="neutral" icon="heroicon-o-pencil-square">草稿</x-status-badge>
-                            @endif
-                        </td>
-                        <td class="td text-gray-600 dark:text-gray-300">{{ $post->deleted_at->format('Y-m-d H:i') }}</td>
-                        <td class="td text-right whitespace-nowrap">
-                            <div class="inline-flex items-center gap-0.5">
-                                <form method="POST" action="{{ route('posts.restore', $post->id) }}" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <x-icon-button icon="heroicon-o-arrow-uturn-left" title="还原该文章" variant="primary" />
-                                </form>
-                                <form method="POST" action="{{ route('posts.force-destroy', $post->id) }}" class="inline"
-                                      data-confirm-title="彻底删除文章「{{ $post->title }}」？"
-                                      data-confirm-message="彻底删除将无法恢复，确定继续吗？">
-                                    @csrf
-                                    @method('DELETE')
-                                    <x-icon-button icon="heroicon-o-trash" title="彻底删除（不可恢复）" variant="danger"
-                                                   @click.prevent="window.__ui.confirmModal.open($el.closest('form'))" />
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <x-empty-state icon="heroicon-o-document-text" title="回收站是空的" :colspan="6" />
-                @endforelse
-            </x-slot>
-        </x-data-table>
-
-        {{-- 分页 + 每页条数 --}}
+        {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <x-per-page :paginator="$posts" />
