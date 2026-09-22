@@ -10,6 +10,7 @@ import DictTypeForm from './components/DictTypeForm.vue';
 import DictItemForm from './components/DictItemForm.vue';
 import LogsIndex from './components/LogsIndex.vue';
 import LoginPage from './components/LoginPage.vue';
+import MenuForm from './components/MenuForm.vue';
 import MenusIndex from './components/MenusIndex.vue';
 import PostsIndex from './components/PostsIndex.vue';
 import PostsTrash from './components/PostsTrash.vue';
@@ -27,6 +28,7 @@ const registry = {
     'dict-types-index': DictTypesIndex,
     'logs-index': LogsIndex,
     login: LoginPage,
+    'menu-form': MenuForm,
     'menus-index': MenusIndex,
     'posts-index': PostsIndex,
     'posts-trash': PostsTrash,

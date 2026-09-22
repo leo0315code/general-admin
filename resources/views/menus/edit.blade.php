@@ -10,42 +10,52 @@
         </x-page-header>
     </x-slot>
 
+    @php
+    $iconSuggestions = ['heroicon-o-squares-2x2', 'heroicon-o-document-text', 'heroicon-o-users', 'heroicon-o-shield-check', 'heroicon-o-rectangle-stack', 'heroicon-o-bookmark-square', 'heroicon-o-clipboard-document-list', 'heroicon-o-cog-6-tooth', 'heroicon-o-chart-bar', 'heroicon-o-truck', 'heroicon-o-shopping-cart'];
+    $typeHints = [
+        \App\Models\Menu::TYPE_DIR => '仅作侧边栏分组标题，不参与鉴权',
+        \App\Models\Menu::TYPE_MENU => '可导航页面，权限标识决定菜单是否可见',
+        \App\Models\Menu::TYPE_BUTTON => '页面内操作点（如「新增用户」），用 @can 控制显隐',
+    ];
+    $menuFormProps = [
+        'mode' => 'edit',
+        'action' => route('menus.update', $menu),
+        'method' => 'PATCH',
+        'csrf' => csrf_token(),
+        'old' => [
+            'pid' => old('pid', $menu->pid),
+            'type' => old('type', $menu->type),
+            'title' => old('title', $menu->title),
+            'permission_name' => old('permission_name', $menu->permission_name),
+            'route' => old('route', $menu->route),
+            'icon' => old('icon', $menu->icon),
+            'sort' => old('sort', $menu->sort),
+            'status' => old('status', (bool) $menu->status),
+            'remark' => old('remark', $menu->remark),
+        ],
+        'errors' => $errors->toArray(),
+        'indexUrl' => route('menus.index'),
+        'destroyUrl' => route('menus.destroy', $menu),
+        'parents' => collect($parents)->map(fn ($row) => [
+            'id' => $row['menu']->id,
+            'label' => str_repeat('\u3000', $row['depth']) . ($row['depth'] > 0 ? '└ ' : '') . $row['menu']->title . '（' . $row['menu']->typeLabel() . '）',
+        ])->values(),
+        'typeOptions' => collect(\App\Models\Menu::TYPE_LABELS)->map(fn ($label, $value) => [
+            'value' => $value,
+            'label' => $label,
+            'hint' => $typeHints[$value],
+        ])->values(),
+        'routeSuggestions' => $routeSuggestions,
+        'iconSuggestions' => $iconSuggestions,
+    ];
+@endphp
+
     <div class="card">
-        <form method="POST" action="{{ route('menus.update', $menu) }}" class="p-6 space-y-6">
-            @csrf
-            @method('PATCH')
-
-            @include('menus.partials.form')
-
-            <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-                <x-submit-button label="保存修改" icon="heroicon-o-check" />
-                <a href="{{ route('menus.index') }}" class="btn-secondary">取消</a>
-
-                @can('menus.destroy')
-                    <button
-                        type="submit"
-                        form="menu-destroy-form"
-                        class="btn-danger-ghost border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-2 ml-auto"
-                        @click.prevent="window.__ui.confirmModal.open(document.getElementById('menu-destroy-form'))"
-                    >
-                        <x-icon name="heroicon-o-trash" class="h-4 w-4" />
-                        删除节点
-                    </button>
-                @endcan
-            </div>
-        </form>
-
-        @can('menus.destroy')
-            <form
-                id="menu-destroy-form"
-                method="POST"
-                action="{{ route('menus.destroy', $menu) }}"
-                data-confirm-title="确定要删除「{{ $menu->title }}」吗？"
-                data-confirm-message="对应权限记录将一并清理。"
-            >
-                @csrf
-                @method('DELETE')
-            </form>
-        @endcan
+        <div
+            data-vue-app
+            data-component="menu-form"
+            data-props='{!! vue_props($menuFormProps) !!}'
+            x-ignore
+        ></div>
     </div>
 </x-app-layout>

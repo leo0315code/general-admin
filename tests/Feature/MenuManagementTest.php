@@ -68,8 +68,9 @@ class MenuManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('menus.create'))
             ->assertOk()
-            ->assertSee('上级节点')
-            ->assertSee('权限标识');
+            // 表单 Vue 化：标签由 JS 渲染，服务端 HTML 保留数据 props（类型选项 + 路由建议）
+            ->assertSee('目录')
+            ->assertSee('users.index');
 
         // 带 pid 预选父级（列表页「子节点」按钮）
         $this->actingAs($this->admin())
