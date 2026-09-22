@@ -6,6 +6,8 @@ import { createApp } from 'vue';
 import AppShell from './components/AppShell.vue';
 import DictItemsIndex from './components/DictItemsIndex.vue';
 import DictTypesIndex from './components/DictTypesIndex.vue';
+import DictTypeForm from './components/DictTypeForm.vue';
+import DictItemForm from './components/DictItemForm.vue';
 import LogsIndex from './components/LogsIndex.vue';
 import LoginPage from './components/LoginPage.vue';
 import MenusIndex from './components/MenusIndex.vue';
@@ -18,7 +20,9 @@ import UserForm from './components/UserForm.vue';
 
 const registry = {
     'app-shell': AppShell,
+    'dict-item-form': DictItemForm,
     'dict-items-index': DictItemsIndex,
+    'dict-type-form': DictTypeForm,
     'dict-types-index': DictTypesIndex,
     'logs-index': LogsIndex,
     login: LoginPage,
