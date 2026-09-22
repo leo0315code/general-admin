@@ -12,66 +12,42 @@
 
     <x-flash-messages />
 
+    @php
+        // 用户编辑表单 Vue 组件 props（基本信息 Vue 化，右侧卡片保留 Blade）
+        $userFormProps = [
+            'mode' => 'edit',
+            'action' => route('users.update', $user),
+            'method' => 'PATCH',
+            'csrf' => csrf_token(),
+            'old' => [
+                'name' => old('name', $user->name),
+                'email' => old('email', $user->email),
+                'roles' => old('roles', $userRoleIds),
+            ],
+            'errors' => $errors->toArray(),
+            'roles' => $roles->map(fn ($role) => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'is_admin' => $role->name === \App\Models\User::ROLE_ADMIN,
+            ])->values(),
+            'userRoleIds' => $userRoleIds,
+            'canUpdate' => auth()->user()->can('users.update'),
+            'indexUrl' => route('users.index'),
+        ];
+    @endphp
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- 基本信息 --}}
+        {{-- 基本信息（Vue 组件 UserForm） --}}
         <div class="lg:col-span-2 card">
             <div class="card-header">
                 <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">基本信息</h3>
             </div>
-            <form method="POST" action="{{ route('users.update', $user) }}" class="p-6 space-y-6">
-                @csrf
-                @method('PATCH')
-
-                <x-form-field name="name" label="姓名" :required="true">
-                    <input id="name" name="name" type="text" class="input @error('name') input-error @enderror" value="{{ old('name', $user->name) }}" required>
-                </x-form-field>
-
-                <x-form-field name="email" label="邮箱" :required="true">
-                    <input id="email" name="email" type="email" class="input @error('email') input-error @enderror" value="{{ old('email', $user->email) }}" required>
-                </x-form-field>
-
-                <x-form-field name="roles" label="角色分配" hint="可多选；用户的权限为所分配角色权限的并集。">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        @foreach ($roles as $role)
-                            <label class="flex items-center gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3.5 py-2.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                                <input
-                                    type="checkbox"
-                                    name="roles[]"
-                                    value="{{ $role->id }}"
-                                    class="rounded border-gray-300 dark:border-gray-600 text-primary-600 shadow-sm focus:ring-primary-500"
-                                    @checked(in_array($role->id, old('roles', $userRoleIds)))
-                                >
-                                <span class="text-sm text-gray-700 dark:text-gray-200">{{ $role->name }}</span>
-                                @if ($role->name === \App\Models\User::ROLE_ADMIN)
-                                    <x-icon name="heroicon-o-shield-check" class="h-4 w-4 text-violet-500 dark:text-violet-400" />
-                                @endif
-                            </label>
-                        @endforeach
-                    </div>
-                </x-form-field>
-
-                {{-- 可选：设置新密码 --}}
-                <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">设置新密码（选填）</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">如需在更新资料时同时修改密码，请填写以下两项。</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <x-form-field name="password" label="新密码">
-                            <input id="password" name="password" type="password" class="input @error('password') input-error @enderror" autocomplete="new-password">
-                        </x-form-field>
-                        <x-form-field name="password_confirmation" label="确认新密码">
-                            <input id="password_confirmation" name="password_confirmation" type="password" class="input @error('password_confirmation') input-error @enderror" autocomplete="new-password">
-                        </x-form-field>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-                    @can('users.update')
-                        <x-submit-button label="保存修改" icon="heroicon-o-check" />
-                    @else
-                        <p class="text-sm text-amber-600 dark:text-amber-400">当前角色没有「编辑用户」权限，仅可查看。</p>
-                    @endcan
-                </div>
-            </form>
+            <div
+                data-vue-app
+                data-component="users-form"
+                data-props='{!! vue_props($userFormProps) !!}'
+                x-ignore
+            ></div>
         </div>
 
         {{-- 右侧：账号信息 + 重置密码 + 危险操作 --}}

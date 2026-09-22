@@ -14,6 +14,7 @@ import PostsTrash from './components/PostsTrash.vue';
 import RolesIndex from './components/RolesIndex.vue';
 import UsersIndex from './components/UsersIndex.vue';
 import UsersTrash from './components/UsersTrash.vue';
+import UserForm from './components/UserForm.vue';
 
 const registry = {
     'app-shell': AppShell,
@@ -25,6 +26,7 @@ const registry = {
     'posts-index': PostsIndex,
     'posts-trash': PostsTrash,
     'roles-index': RolesIndex,
+    'users-form': UserForm,
     'users-index': UsersIndex,
     'users-trash': UsersTrash,
 };
