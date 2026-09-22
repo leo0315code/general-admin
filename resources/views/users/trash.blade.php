@@ -71,7 +71,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <x-icon-button icon="heroicon-o-trash" title="彻底删除（不可恢复）" variant="danger"
-                                                   @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))" />
+                                                   @click.prevent="window.__ui.confirmModal.open($el.closest('form'))" />
                                 </form>
                             </div>
                         </td>
@@ -90,6 +90,4 @@
             </div>
         </div>
     </div>
-
-    <x-confirm-modal />
 </x-app-layout>

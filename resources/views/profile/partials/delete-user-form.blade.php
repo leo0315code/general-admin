@@ -10,8 +10,7 @@
     </header>
 
     <x-danger-button
-        x-data=""
-        x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
+        onclick="event.preventDefault(); window.dispatchEvent(new CustomEvent('open-modal', { detail: 'confirm-user-deletion' }));"
     >{{ __('Delete Account') }}</x-danger-button>
 
     {{-- 特例：删除账号需输入密码，保留 Breeze 原 x-modal（不降级为简单确认弹窗），仅复用视觉 token --}}
@@ -43,7 +42,7 @@
             </div>
 
             <div class="mt-6 flex justify-end">
-                <x-secondary-button x-on:click="$dispatch('close')">
+                <x-secondary-button data-modal-close>
                     {{ __('Cancel') }}
                 </x-secondary-button>
 

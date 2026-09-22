@@ -48,7 +48,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn-danger-ghost border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-2"
-                            @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))">
+                            @click.prevent="window.__ui.confirmModal.open($el.closest('form'))">
                         <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                         删除字典项
                     </button>
@@ -56,6 +56,4 @@
             </div>
         </form>
     </div>
-
-    <x-confirm-modal />
 </x-app-layout>

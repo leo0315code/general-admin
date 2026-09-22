@@ -34,11 +34,7 @@
         </script>
     </head>
     <body class="font-sans antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-        <div
-            x-data="{ dark: localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches), sidebarOpen: false }"
-            x-effect="document.documentElement.classList.toggle('dark', dark); localStorage.setItem('theme', dark ? 'dark' : 'light');"
-            class="min-h-screen"
-        >
+        <div class="min-h-screen">
             {{-- 顶部导航栏（全宽，固定） --}}
             <header class="fixed top-0 inset-x-0 z-40 h-16 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-200 dark:border-gray-700/80">
                 <div class="flex h-16 items-center justify-between px-4 sm:px-6">
@@ -46,7 +42,7 @@
                     <div class="flex items-center gap-3">
                         <button
                             type="button"
-                            @click="sidebarOpen = !sidebarOpen"
+                            data-action="toggle-sidebar"
                             class="inline-flex items-center justify-center p-2 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
                             aria-label="切换侧边栏"
                         >
@@ -63,49 +59,29 @@
 
                     {{-- 右侧：全局搜索 + 明暗切换 + 用户下拉 --}}
                     <div class="flex items-center gap-1.5 sm:gap-2">
-                        {{-- 全局搜索（客户端过滤当前用户可见菜单） --}}
-                        <div class="hidden md:block relative" x-data="globalSearch()" @keydown.escape.window="open = false">
+                        {{-- 全局搜索（原生 JS，客户端过滤当前用户可见菜单） --}}
+                        <div class="hidden md:block relative" data-search-root>
                             <div class="relative">
                                 <x-icon name="heroicon-o-magnifying-glass" class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input
                                     type="search"
-                                    x-ref="input"
-                                    x-model="query"
-                                    @focus="open = true"
-                                    @keydown.slash.window.prevent="open = true; focusInput()"
+                                    data-search-input
                                     placeholder="搜索菜单…（/）"
                                     class="input !w-52 xl:!w-64 !py-2 pl-9 text-sm"
                                     aria-label="全局搜索"
                                 >
                             </div>
 
-                            {{-- 搜索结果 --}}
+                            {{-- 搜索结果（JS 渲染） --}}
                             <div
-                                x-show="open && results.length > 0"
-                                @click.outside="open = false"
-                                x-transition:enter="ease-out duration-150"
-                                x-transition:enter-start="opacity-0 scale-95"
-                                x-transition:enter-end="opacity-100 scale-100"
-                                x-transition:leave="ease-in duration-100"
-                                x-transition:leave-start="opacity-100 scale-100"
-                                x-transition:leave-end="opacity-0 scale-95"
-                                class="absolute right-0 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-popover z-50"
-                            >
-                                <template x-for="r in results" :key="r.url">
-                                    <a :href="r.url" @click="go(r.url)" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                                        <span class="inline-flex items-center justify-center h-7 w-7 shrink-0 rounded-lg bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300">
-                                            <x-icon name="heroicon-o-squares-2x2" class="h-4 w-4" />
-                                        </span>
-                                        <span class="truncate" x-text="r.title"></span>
-                                    </a>
-                                </template>
-                            </div>
+                                data-search-results
+                                class="hidden absolute right-0 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-popover z-50"
+                            ></div>
 
                             {{-- 无结果 --}}
                             <div
-                                x-show="open && query.trim() !== '' && results.length === 0"
-                                @click.outside="open = false"
-                                class="absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-popover z-50 px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
+                                data-search-empty
+                                class="hidden absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-popover z-50 px-4 py-3 text-sm text-gray-500 dark:text-gray-400"
                             >
                                 没有匹配的菜单
                             </div>
@@ -114,12 +90,12 @@
                         {{-- 明/暗切换按钮 --}}
                         <button
                             type="button"
-                            @click="dark = !dark"
+                            data-action="toggle-dark"
                             class="inline-flex items-center justify-center p-2 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                            :title="dark ? '切换到亮色模式' : '切换到暗色模式'"
+                            title="切换主题"
                         >
-                            <x-icon x-show="!dark" name="heroicon-o-moon" class="h-5 w-5" />
-                            <x-icon x-show="dark" name="heroicon-o-sun" class="h-5 w-5" />
+                            <x-icon data-icon-moon name="heroicon-o-moon" class="h-5 w-5" />
+                            <x-icon data-icon-sun name="heroicon-o-sun" class="h-5 w-5 hidden" />
                         </button>
 
                         {{-- 用户下拉菜单 --}}
@@ -161,24 +137,19 @@
             </header>
 
             {{-- 移动端遮罩 --}}
-            <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-gray-900/50 lg:hidden" x-cloak></div>
+            <div id="sidebar-overlay" class="hidden fixed inset-0 z-30 bg-gray-900/50 lg:hidden"></div>
 
             {{-- 左侧边栏（固定；亮色为浅色，暗色为深色） --}}
             <aside
-                :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-                class="fixed left-0 top-16 bottom-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 overflow-y-auto transition-transform duration-200 lg:translate-x-0"
+                id="app-sidebar"
+                class="fixed left-0 top-16 bottom-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 overflow-y-auto transition-transform duration-200 -translate-x-full lg:translate-x-0"
             >
                 @include('layouts.sidebar', ['navGroups' => $navGroups])
             </aside>
 
-            {{-- 主内容区（全宽：预留顶栏高度与侧边栏宽度，不使用居中容器；页面淡入过渡） --}}
+            {{-- 主内容区（全宽：预留顶栏高度与侧边栏宽度，不使用居中容器） --}}
             <main class="pt-16 lg:pl-64">
-                <div
-                    class="p-4 sm:p-6 lg:p-8 transition-opacity duration-300"
-                    x-data="{ pageLoaded: false }"
-                    x-init="$nextTick(() => pageLoaded = true)"
-                    :class="pageLoaded ? 'opacity-100' : 'opacity-0'"
-                >
+                <div class="p-4 sm:p-6 lg:p-8">
                     @isset($header)
                         <div class="mb-6">
                             {{ $header }}

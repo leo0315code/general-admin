@@ -133,7 +133,7 @@
                             <input id="new_password_confirmation" name="new_password_confirmation" type="password" class="input @error('new_password_confirmation') input-error @enderror" required>
                         </x-form-field>
                         <button type="submit" class="btn-primary w-full justify-center"
-                                @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))">
+                                @click.prevent="window.__ui.confirmModal.open($el.closest('form'))">
                             <x-icon name="heroicon-o-key" class="h-4 w-4" />
                             重置密码
                         </button>
@@ -156,7 +156,7 @@
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn-danger-ghost w-full justify-center border border-red-200 dark:border-red-500/30 rounded-lg py-2"
-                                        @click.prevent="Alpine.store('confirmModal').open($el.closest('form'))">
+                                        @click.prevent="window.__ui.confirmModal.open($el.closest('form'))">
                                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                                     删除用户
                                 </button>
@@ -167,6 +167,4 @@
             @endcan
         </div>
     </div>
-
-    <x-confirm-modal />
 </x-app-layout>

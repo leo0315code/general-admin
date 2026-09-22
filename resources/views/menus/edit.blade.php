@@ -26,7 +26,7 @@
                         type="submit"
                         form="menu-destroy-form"
                         class="btn-danger-ghost border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-2 ml-auto"
-                        @click.prevent="Alpine.store('confirmModal').open(document.getElementById('menu-destroy-form'))"
+                        @click.prevent="window.__ui.confirmModal.open(document.getElementById('menu-destroy-form'))"
                     >
                         <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                         删除节点
@@ -48,6 +48,4 @@
             </form>
         @endcan
     </div>
-
-    <x-confirm-modal />
 </x-app-layout>

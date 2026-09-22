@@ -12,7 +12,7 @@
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">出于安全考虑，首次登录（或密码被重置后）需要先修改密码才能使用后台。</p>
         </div>
 
-        <form method="POST" action="{{ route('password.setup.update') }}" class="space-y-5" x-data="{ showPassword: false }">
+        <form method="POST" action="{{ route('password.setup.update') }}" class="space-y-5">
             @csrf
 
             {{-- 新密码 --}}
@@ -28,10 +28,11 @@
                         placeholder="至少 8 个字符"
                         required autofocus autocomplete="new-password"
                     >
-                    <button type="button" @click="showPassword = !showPassword"
+                    <button type="button"
+                            onclick="const i=document.getElementById('password');const s=i.type==='password';i.type=s?'text':'password';this.querySelector('[data-eye]').classList.toggle('hidden',!s);this.querySelector('[data-eye-slash]').classList.toggle('hidden',s);"
                             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <x-icon x-show="!showPassword" name="heroicon-o-eye" class="h-5 w-5" />
-                        <x-icon x-show="showPassword" name="heroicon-o-eye-slash" class="h-5 w-5" x-cloak />
+                        <x-icon data-eye name="heroicon-o-eye" class="h-5 w-5" />
+                        <x-icon data-eye-slash name="heroicon-o-eye-slash" class="h-5 w-5 hidden" />
                     </button>
                 </div>
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />

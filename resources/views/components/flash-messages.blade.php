@@ -6,17 +6,17 @@
 @endphp
 
 {{--
-    Flash 消息（UI 现代化重构 · T05）
+    Flash 消息（原生 JS → Vue Toast）
     ------------------------------------------------------------
-    「Toast 驱动」升级：session flash 投喂给全局 Toast（右上角展示），
+    session flash 投喂给全局 Toast（右上角展示，window.__ui.toast 事件桥→Vue），
     同时**保留 DOM 文本**（隐藏容器），保证既有 assertSee 断言不破，
     且无 JS / 关闭 JS 场景下用户仍可看到消息文本。
 --}}
 @foreach ($messages as $type => $message)
     @if ($message)
         <div
-            x-data="{ fed: false }"
-            x-init="if (! fed) { fed = true; Alpine.store('toast').show(@js($type), @js($message)); }"
+            data-flash-type="{{ $type }}"
+            data-flash-message="{{ $message }}"
             class="hidden"
             aria-hidden="true"
         >
