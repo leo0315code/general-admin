@@ -97,7 +97,9 @@ class MenuManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('roles.edit', $role))
             ->assertOk()
-            ->assertSee('全选本组');
+            // 权限树 Vue 化：树数据经 props 保留（标题 + 权限标识），模板文本（全选本组）由 JS 渲染
+            ->assertSee('dashboard.view')
+            ->assertSee('post.manage');
     }
 
     // ---- 创建：自动同步权限 ----
