@@ -76,6 +76,51 @@ class UserManagementTest extends TestCase
             ->assertSessionHasErrors('email');
     }
 
+    public function test_email_is_optional_on_create(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('users.store'), [
+                'name' => '无邮箱用户',
+                'email' => '',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ])
+            ->assertRedirect(route('users.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('users', ['name' => '无邮箱用户', 'email' => null, 'deleted_at' => null]);
+    }
+
+    public function test_multiple_users_without_email_are_allowed(): void
+    {
+        foreach (['甲', '乙'] as $name) {
+            $this->actingAs($this->admin)
+                ->post(route('users.store'), [
+                    'name' => $name,
+                    'email' => null,
+                    'password' => 'password123',
+                    'password_confirmation' => 'password123',
+                ])
+                ->assertSessionHasNoErrors();
+        }
+
+        $this->assertSame(2, User::query()->whereNull('email')->count());
+    }
+
+    public function test_email_can_be_cleared_on_update(): void
+    {
+        $user = User::factory()->create(['email' => 'old@example.com']);
+
+        $this->actingAs($this->admin)
+            ->patch(route('users.update', $user), [
+                'name' => $user->name,
+                'email' => '',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull($user->fresh()->email);
+    }
+
     public function test_admin_can_update_user_and_roles(): void
     {
         $user = User::factory()->create();

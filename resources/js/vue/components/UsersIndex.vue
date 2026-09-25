@@ -246,7 +246,7 @@ function destroyUser(u) {
                                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ u.name }}</span>
                             </div>
                         </td>
-                        <td class="td text-gray-600 dark:text-gray-300">{{ u.email }}</td>
+                        <td class="td text-gray-600 dark:text-gray-300">{{ u.email || '—' }}</td>
                         <td class="td">
                             <div class="flex flex-wrap gap-1.5">
                                 <span

@@ -65,7 +65,7 @@ function fieldError(field) {
 
         <!-- 邮箱 -->
         <div>
-            <label class="label" for="email">邮箱 <span class="text-danger-500">*</span></label>
+            <label class="label" for="email">邮箱 <span class="text-xs font-normal text-gray-400 dark:text-gray-500">（选填）</span></label>
             <input
                 id="email"
                 name="email"
@@ -73,10 +73,10 @@ function fieldError(field) {
                 type="email"
                 class="input"
                 :class="{ 'input-error': fieldError('email').length }"
-                placeholder="name@example.com"
-                required
+                placeholder="name@example.com（选填，留空表示无邮箱）"
                 :disabled="!canUpdate"
             >
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">选填。留空则该账号无邮箱（无法接收邮件通知 / 找回密码），登录仍可用用户名。</p>
             <p v-for="e in fieldError('email')" :key="e" class="mt-1.5 text-xs text-danger-600 dark:text-danger-400">{{ e }}</p>
         </div>
 

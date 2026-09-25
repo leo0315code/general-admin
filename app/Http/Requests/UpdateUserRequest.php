@@ -16,6 +16,16 @@ class UpdateUserRequest extends FormRequest
         return $this->user()?->can('user.manage') ?? false;
     }
 
+    /**
+     * 邮箱选填：留空归一为 null（管理员显式清空邮箱 / 表单未填时避免空串绕过校验）
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email') && trim((string) $this->input('email')) === '') {
+            $this->merge(['email' => null]);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -26,8 +36,9 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'name')->ignore($this->route('user')->id)->whereNull('deleted_at'),
             ],
+            // 邮箱选填：留空表示清空该用户邮箱
             'email' => [
-                'required',
+                'nullable',
                 'string',
                 'email',
                 'max:255',
@@ -45,7 +56,6 @@ class UpdateUserRequest extends FormRequest
         return [
             'name.required' => '请输入用户名。',
             'name.unique' => '该用户名已被使用。',
-            'email.required' => '请输入邮箱。',
             'email.email' => '邮箱格式不正确。',
             'email.unique' => '该邮箱已被使用。',
             'password.confirmed' => '两次输入的密码不一致。',

@@ -96,7 +96,7 @@ function submitDelete() {
                 </div>
 
                 <div>
-                    <label class="label" for="email">登录邮箱 <span class="text-danger-500">*</span></label>
+                    <label class="label" for="email">登录邮箱 <span class="text-xs font-normal text-gray-400 dark:text-gray-500">（选填）</span></label>
                     <input
                         id="email"
                         name="email"
@@ -105,8 +105,8 @@ function submitDelete() {
                         class="input"
                         :class="{ 'input-error': infoError('email').length }"
                         autocomplete="username"
-                        required
                     >
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">选填。留空表示不修改邮箱（保留当前邮箱）；填写新邮箱后需重新验证。</p>
                     <p v-for="e in infoError('email')" :key="e" class="mt-1.5 text-xs text-danger-600 dark:text-danger-400">{{ e }}</p>
 
                     <div v-if="unverified" class="mt-2 text-sm text-gray-700 dark:text-gray-300">

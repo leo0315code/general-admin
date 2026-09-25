@@ -10,7 +10,8 @@
             'csrf' => csrf_token(),
             'user' => [
                 'name' => old('name', $user->name),
-                'email' => old('email', $user->email),
+                // 邮箱选填：提交留空时回填当前邮箱（语义为「不修改邮箱」）
+                'email' => old('email') ?: $user->email,
             ],
             'unverified' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail(),
             'updateUrl' => route('profile.update'),

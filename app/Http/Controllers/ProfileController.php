@@ -26,7 +26,13 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        // 邮箱选填：留空表示「不修改邮箱」，直接剔除该字段（避免把现有邮箱清空）
+        $data = $request->validated();
+        if (($data['email'] ?? null) === null) {
+            unset($data['email']);
+        }
+
+        $request->user()->fill($data);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;

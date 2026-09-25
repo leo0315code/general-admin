@@ -15,12 +15,23 @@ class StoreUserRequest extends FormRequest
         return $this->user()?->can('user.manage') ?? false;
     }
 
+    /**
+     * 邮箱选填：前端留空 → 归一为 null（避免空串触发 email 格式校验与唯一索引冲突）
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email') && trim((string) $this->input('email')) === '') {
+            $this->merge(['email' => null]);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255', 'unique:users,name'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            // 邮箱选填（users.email 已改为 nullable）：留空表示该用户无邮箱
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['integer', 'exists:roles,id'],
@@ -33,7 +44,6 @@ class StoreUserRequest extends FormRequest
         return [
             'name.required' => '请输入用户名。',
             'name.unique' => '该用户名已被使用。',
-            'email.required' => '请输入邮箱。',
             'email.email' => '邮箱格式不正确。',
             'email.unique' => '该邮箱已被使用。',
             'password.required' => '请输入密码。',

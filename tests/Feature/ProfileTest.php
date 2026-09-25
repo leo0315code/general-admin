@@ -62,6 +62,24 @@ class ProfileTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
+    public function test_email_is_optional_and_blank_email_keeps_current_value(): void
+    {
+        $user = User::factory()->create(['email' => 'keep@example.com']);
+
+        $this->actingAs($user)
+            ->patch(route('profile.edit'), [
+                'name' => '改名不改邮箱',
+                'email' => '',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertSame('改名不改邮箱', $user->name);
+        $this->assertSame('keep@example.com', $user->email, '邮箱留空应保持原值');
+    }
+
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
     {
         $user = User::factory()->create();
