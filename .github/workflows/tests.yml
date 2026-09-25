@@ -40,16 +40,23 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Diagnostic info
+        run: |
+          php -v
+          php -m | grep -iE 'zip|gd|pdo_sqlite' || true
+          node -v
+          npm -v
+
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install JS dependencies
         run: npm ci
-
-      - name: Prepare environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
 
       - name: Check code style (Pint)
         run: ./vendor/bin/pint --test
