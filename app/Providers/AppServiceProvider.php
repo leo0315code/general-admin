@@ -60,11 +60,11 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function loadSettings(): void
     {
-        if (! Schema::hasTable('settings')) {
-            return;
-        }
-
         try {
+            if (! Schema::hasTable('settings')) {
+                return;
+            }
+
             // 缓存只存标量数组：serializable_classes=false 禁止对象反序列化，
             // 存 Collection 对象会在读取时变成 __PHP_Incomplete_Class
             $settings = collect(Cache::rememberForever('app.settings', function () {
@@ -86,7 +86,8 @@ class AppServiceProvider extends ServiceProvider
                 config(['app.copyright' => $settings['copyright']]);
             }
         } catch (\Throwable) {
-            // 忽略数据库不可用场景（如配置缓存期）
+            // 数据库不可用场景（首次部署、composer 的 package:discover 阶段无 .env、
+            // 迁移前等）一律静默跳过，不阻塞应用引导；设置保持 config 默认值。
         }
     }
 }
