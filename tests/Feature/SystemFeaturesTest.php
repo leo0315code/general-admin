@@ -68,7 +68,10 @@ class SystemFeaturesTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('settings.index'))
             ->assertOk()
-            ->assertSee('系统设置');
+            ->assertSee('系统设置')
+            // Vue 化后表单由 SettingsForm 渲染，字段以 props 形式下发
+            ->assertSee('data-component="settings-form"', false)
+            ->assertSee('site_name');
 
         $this->actingAs($this->admin)
             ->put(route('settings.update'), [

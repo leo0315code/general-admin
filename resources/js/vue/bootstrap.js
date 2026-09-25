@@ -18,6 +18,7 @@ import PostsTrash from './components/PostsTrash.vue';
 import PostForm from './components/PostForm.vue';
 import RoleForm from './components/RoleForm.vue';
 import RolesIndex from './components/RolesIndex.vue';
+import SettingsForm from './components/SettingsForm.vue';
 import UsersIndex from './components/UsersIndex.vue';
 import UsersTrash from './components/UsersTrash.vue';
 import UserForm from './components/UserForm.vue';
@@ -38,6 +39,7 @@ const registry = {
     'post-form': PostForm,
     'role-form': RoleForm,
     'roles-index': RolesIndex,
+    'settings-form': SettingsForm,
     'users-form': UserForm,
     'users-index': UsersIndex,
     'users-trash': UsersTrash,
