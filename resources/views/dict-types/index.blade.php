@@ -34,12 +34,7 @@
 
     <div class="card">
         {{-- 字典类型表格（Vue 组件 DictTypesIndex） --}}
-        <div
-            data-vue-app
-            data-component="dict-types-index"
-            data-props='{!! vue_props($dictTypesIndexProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="dict-types-index" :props="$dictTypesIndexProps" />
 
         {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">

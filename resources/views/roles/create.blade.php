@@ -33,11 +33,6 @@
 @endphp
 
     <div class="card">
-        <div
-            data-vue-app
-            data-component="role-form"
-            data-props='{!! vue_props($roleFormProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="role-form" :props="$roleFormProps" />
     </div>
 </x-app-layout>

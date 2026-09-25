@@ -42,12 +42,7 @@
             <div class="card-header">
                 <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">基本信息</h3>
             </div>
-            <div
-                data-vue-app
-                data-component="users-form"
-                data-props='{!! vue_props($userFormProps) !!}'
-                x-ignore
-            ></div>
+            <x-vue-mount component="users-form" :props="$userFormProps" />
         </div>
 
         {{-- 右侧：账号信息 + 重置密码 + 危险操作 --}}

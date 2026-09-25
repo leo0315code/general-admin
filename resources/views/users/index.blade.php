@@ -86,12 +86,7 @@
 
     <div class="card">
         {{-- 列表交互层：搜索 / 勾选 / 批量 / 表格（Vue 组件 UsersIndex） --}}
-        <div
-            data-vue-app
-            data-component="users-index"
-            data-props='{!! vue_props($usersIndexProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="users-index" :props="$usersIndexProps" />
 
         {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">

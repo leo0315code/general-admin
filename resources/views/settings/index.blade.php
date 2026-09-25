@@ -28,11 +28,6 @@
     @endphp
 
     <div class="card max-w-2xl">
-        <div
-            data-vue-app
-            data-component="settings-form"
-            data-props='{!! vue_props($settingsProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="settings-form" :props="$settingsProps" />
     </div>
 </x-app-layout>

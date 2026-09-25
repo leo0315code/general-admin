@@ -33,12 +33,7 @@
 
     <div class="card">
         {{-- 列表交互层：表格（Vue 组件 RolesIndex） --}}
-        <div
-            data-vue-app
-            data-component="roles-index"
-            data-props='{!! vue_props($rolesIndexProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="roles-index" :props="$rolesIndexProps" />
 
         {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">

@@ -27,11 +27,6 @@
 
     <div class="card max-w-2xl">
         {{-- 用户创建表单（Vue 组件 UserForm） --}}
-        <div
-            data-vue-app
-            data-component="users-form"
-            data-props='{!! vue_props($userFormProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="users-form" :props="$userFormProps" />
     </div>
 </x-app-layout>

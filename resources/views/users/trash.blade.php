@@ -33,12 +33,7 @@
 
     <div class="card">
         {{-- 搜索 + 表格（Vue 组件 UsersTrash） --}}
-        <div
-            data-vue-app
-            data-component="users-trash"
-            data-props='{!! vue_props($usersTrashProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="users-trash" :props="$usersTrashProps" />
 
         {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">

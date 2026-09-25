@@ -30,11 +30,6 @@
 @endphp
 
     <div class="card max-w-2xl">
-        <div
-            data-vue-app
-            data-component="dict-item-form"
-            data-props='{!! vue_props($dictItemFormProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="dict-item-form" :props="$dictItemFormProps" />
     </div>
 </x-app-layout>

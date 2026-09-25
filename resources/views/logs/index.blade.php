@@ -30,12 +30,7 @@
 
     <div class="card">
         {{-- 筛选栏 + 日志表格（Vue 组件 LogsIndex） --}}
-        <div
-            data-vue-app
-            data-component="logs-index"
-            data-props='{!! vue_props($logsIndexProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="logs-index" :props="$logsIndexProps" />
 
         {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">

@@ -34,12 +34,7 @@
 
     <div class="card">
         {{-- 搜索/筛选 + 表格（Vue 组件 PostsTrash） --}}
-        <div
-            data-vue-app
-            data-component="posts-trash"
-            data-props='{!! vue_props($postsTrashProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="posts-trash" :props="$postsTrashProps" />
 
         {{-- 分页 + 每页条数（Blade 渲染，GET 整页刷新） --}}
         <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700">

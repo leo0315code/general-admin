@@ -31,11 +31,6 @@
 @endphp
 
     <div class="card max-w-3xl">
-        <div
-            data-vue-app
-            data-component="post-form"
-            data-props='{!! vue_props($postFormProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="post-form" :props="$postFormProps" />
     </div>
 </x-app-layout>

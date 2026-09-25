@@ -22,11 +22,6 @@
         </div>
 
         {{-- 登录表单（Vue 组件 LoginPage） --}}
-        <div
-            data-vue-app
-            data-component="login"
-            data-props='{!! vue_props($loginProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="login" :props="$loginProps" />
     </div>
 </x-guest-layout>

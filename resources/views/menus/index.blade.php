@@ -53,11 +53,6 @@
         </div>
 
         {{-- 菜单树表格（Vue 组件 MenusIndex） --}}
-        <div
-            data-vue-app
-            data-component="menus-index"
-            data-props='{!! vue_props($menusIndexProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="menus-index" :props="$menusIndexProps" />
     </div>
 </x-app-layout>

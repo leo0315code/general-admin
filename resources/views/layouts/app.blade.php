@@ -158,11 +158,6 @@
         </div>
 
         {{-- 全局 Vue 交互壳（Toast / ConfirmModal）：Alpine 的 toast/confirmModal store 已桥接到此 --}}
-        <div
-            data-vue-app
-            data-component="app-shell"
-            data-props='@json(["userName" => Auth::user()->name])'
-            x-ignore
-        ></div>
+        <x-vue-mount component="app-shell" :props="['userName' => Auth::user()->name]" />
     </body>
 </html>

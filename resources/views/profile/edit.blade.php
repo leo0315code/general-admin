@@ -27,10 +27,5 @@
         ];
     @endphp
 
-    <div
-        data-vue-app
-        data-component="profile-form"
-        data-props='{!! vue_props($profileProps) !!}'
-        x-ignore
-    ></div>
+    <x-vue-mount component="profile-form" :props="$profileProps" />
 </x-app-layout>

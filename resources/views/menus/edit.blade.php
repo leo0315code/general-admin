@@ -51,11 +51,6 @@
 @endphp
 
     <div class="card">
-        <div
-            data-vue-app
-            data-component="menu-form"
-            data-props='{!! vue_props($menuFormProps) !!}'
-            x-ignore
-        ></div>
+        <x-vue-mount component="menu-form" :props="$menuFormProps" />
     </div>
 </x-app-layout>
