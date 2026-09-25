@@ -16,8 +16,9 @@
     $end = min($last, $current + 2);
     $pages = range($start, $end);
     // 跳页 URL：保留全部现有 query，仅替换 page 占位
+    // 注意：必须锚定 [?&]，否则 per_page=10 会被误替换成 per___PAGE__
     $jumpUrl = $paginator->url($current);
-    $jumpUrl = preg_replace('/'.preg_quote($pageName, '/').'=\d+/', $pageName.'=__PAGE__', $jumpUrl);
+    $jumpUrl = preg_replace('/([?&])'.preg_quote($pageName, '/').'=\d+/', '$1'.$pageName.'=__PAGE__', $jumpUrl);
     if (! str_contains($jumpUrl, '__PAGE__')) {
         $jumpUrl .= (str_contains($jumpUrl, '?') ? '&' : '?').$pageName.'=__PAGE__';
     }
@@ -31,19 +32,13 @@
         @endif
     </div>
 
+    {{-- 跳页：原生 JS（见 window.Layout.initPagination），不再依赖 Alpine --}}
     <div
         class="flex flex-wrap items-center gap-1"
-        x-data="{
-            page: {{ $current }},
-            last: {{ $last }},
-            jumpUrl: @js($jumpUrl),
-            goto() {
-                let p = parseInt(this.page, 10);
-                if (! Number.isFinite(p) || p < 1) { p = 1; }
-                if (p > this.last) { p = this.last; }
-                window.location.href = this.jumpUrl.replace('__PAGE__', p);
-            }
-        }"
+        data-pagination
+        data-current="{{ $current }}"
+        data-last="{{ $last }}"
+        data-jump-url="{{ $jumpUrl }}"
     >
         {{-- 上一页 --}}
         @if ($paginator->onFirstPage())
@@ -100,13 +95,13 @@
             <input
                 type="number"
                 min="1"
-                :max="last"
-                x-model.number="page"
-                @keydown.enter="goto"
+                max="{{ $last }}"
+                value="{{ $current }}"
+                data-page-jump
                 class="input !w-16 !px-2 !py-1 text-center text-sm"
                 aria-label="跳转页码"
             >
-            <button type="button" @click="goto" class="btn-secondary !px-2.5 !py-1 text-xs">GO</button>
+            <button type="button" data-page-goto class="btn-secondary !px-2.5 !py-1 text-xs">GO</button>
         </div>
     </div>
 </div>

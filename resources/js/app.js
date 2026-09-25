@@ -67,6 +67,7 @@ window.Layout = {
         this.initSubmitButtons();
         this.initModal();
         this.initDropdowns();
+        this.initPagination();
     },
 
     /* ---- 明暗切换 ---- */
@@ -273,6 +274,38 @@ window.Layout = {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 document.querySelectorAll('[data-dropdown].dropdown-open').forEach(closeDropdown);
+            }
+        });
+    },
+
+    /* ---- 分页跳页（原生 JS，替代 Alpine x-data/x-model） ---- */
+    initPagination() {
+        const gotoPage = (scope) => {
+            const wrap = scope.closest('[data-pagination]');
+            if (!wrap) return;
+
+            const last = parseInt(wrap.dataset.last, 10) || 1;
+            const input = wrap.querySelector('[data-page-jump]');
+            let page = parseInt(input?.value, 10);
+
+            if (!Number.isFinite(page) || page < 1) page = 1;
+            if (page > last) page = last;
+            if (input) input.value = page;
+
+            window.location.href = wrap.dataset.jumpUrl.split('__PAGE__').join(String(page));
+        };
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-page-goto]');
+            if (btn) gotoPage(btn);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const input = e.target.closest?.('[data-page-jump]');
+            if (input) {
+                e.preventDefault();
+                gotoPage(input);
             }
         });
     },

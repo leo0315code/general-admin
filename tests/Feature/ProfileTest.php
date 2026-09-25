@@ -21,6 +21,25 @@ class ProfileTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_profile_page_mounts_vue_component_with_prefilled_data(): void
+    {
+        $user = User::factory()->create(['name' => '张三']);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('profile.edit'));
+
+        $response
+            ->assertOk()
+            ->assertSee('data-component="profile-form"', false)
+            ->assertSee('个人资料')
+            ->assertSee($user->email);
+
+        // 已无 Breeze 英文 partials（Vue 化后移除）
+        $response->assertDontSee('Profile Information');
+        $response->assertDontSee('Delete Account');
+    }
+
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();

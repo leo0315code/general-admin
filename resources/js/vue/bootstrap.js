@@ -13,6 +13,7 @@ import LoginPage from './components/LoginPage.vue';
 import MenuForm from './components/MenuForm.vue';
 import MenusIndex from './components/MenusIndex.vue';
 import PostsIndex from './components/PostsIndex.vue';
+import ProfileForm from './components/ProfileForm.vue';
 import PostsTrash from './components/PostsTrash.vue';
 import PostForm from './components/PostForm.vue';
 import RoleForm from './components/RoleForm.vue';
@@ -32,6 +33,7 @@ const registry = {
     'menu-form': MenuForm,
     'menus-index': MenusIndex,
     'posts-index': PostsIndex,
+    'profile-form': ProfileForm,
     'posts-trash': PostsTrash,
     'post-form': PostForm,
     'role-form': RoleForm,

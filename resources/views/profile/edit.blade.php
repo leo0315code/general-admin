@@ -1,29 +1,35 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <x-page-header title="个人资料" description="管理账号基本信息、登录密码与账号注销" />
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
-            </div>
+    <x-flash-messages />
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
-            </div>
+    @php
+        $profileProps = [
+            'csrf' => csrf_token(),
+            'user' => [
+                'name' => old('name', $user->name),
+                'email' => old('email', $user->email),
+            ],
+            'unverified' => $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail(),
+            'updateUrl' => route('profile.update'),
+            'passwordUrl' => route('password.update'),
+            'destroyUrl' => route('profile.destroy'),
+            'verificationUrl' => route('verification.send'),
+            'errors' => [
+                'default' => $errors->getMessages(),
+                'updatePassword' => $errors->updatePassword->getMessages(),
+                'userDeletion' => $errors->userDeletion->getMessages(),
+            ],
+            'status' => session('status', ''),
+        ];
+    @endphp
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
-            </div>
-        </div>
-    </div>
+    <div
+        data-vue-app
+        data-component="profile-form"
+        data-props='{!! vue_props($profileProps) !!}'
+        x-ignore
+    ></div>
 </x-app-layout>
