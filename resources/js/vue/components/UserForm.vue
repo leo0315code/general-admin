@@ -96,6 +96,7 @@ function fieldError(field) {
                         autocomplete="new-password"
                         :disabled="!canUpdate"
                     >
+                    <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">至少 10 位，需同时包含字母与数字</p>
                     <p v-for="e in fieldError('password')" :key="e" class="mt-1.5 text-xs text-danger-600 dark:text-danger-400">{{ e }}</p>
                 </div>
                 <div>

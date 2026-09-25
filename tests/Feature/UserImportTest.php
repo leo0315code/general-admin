@@ -29,7 +29,7 @@ class UserImportTest extends TestCase
     /** 构建内存 xlsx 上传文件（首行为表头） */
     private function makeImportFile(array $rows): UploadedFile
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $spreadsheet->getActiveSheet()->fromArray(
             array_merge([['姓名', '邮箱', '密码', '角色']], $rows),
             null,

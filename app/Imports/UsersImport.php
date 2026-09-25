@@ -21,7 +21,7 @@ use Spatie\Permission\Models\Role;
  * - 角色选填：为空默认 editor，须为已存在的角色标识，否则整行跳过
  * - 导入过程中收集错误行，控制器统一提示；单行失败不影响其它行
  */
-class UsersImport implements ToModel, WithHeadingRow, SkipsEmptyRows
+class UsersImport implements SkipsEmptyRows, ToModel, WithHeadingRow
 {
     /** 成功导入数量 */
     public static int $created = 0;

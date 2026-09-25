@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +25,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 全局密码强度策略（所有 Password::defaults() 生效处统一约束）：
+        // 至少 10 位，同时包含字母与数字；生产环境追加泄露密码库校验。
+        // 测试/本地环境不校验 uncompromised（避免依赖 HIBP 网络请求）。
+        Password::defaults(function () {
+            $rule = Password::min(10)->letters()->numbers();
+
+            if ($this->app->environment('production')) {
+                $rule->uncompromised();
+            }
+
+            return $rule;
+        });
+
         // 为 Spatie Role 模型补充 users 关联（model_has_roles 多态），
         // 以便 withCount('users') 与 destroy 时判断"已分配用户的角色不可删除"。
         Role::resolveRelationUsing('users', function (Role $role) {

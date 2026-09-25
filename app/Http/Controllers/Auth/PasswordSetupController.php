@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 /**
@@ -30,10 +31,12 @@ class PasswordSetupController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $request->validate([
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ], [
             'password.required' => '请输入新密码。',
-            'password.min' => '新密码至少需要 8 个字符。',
+            'password.min' => '新密码至少需要 10 个字符，且需同时包含字母与数字。',
+            'password.letters' => '新密码需包含字母。',
+            'password.numbers' => '新密码需包含数字。',
             'password.confirmed' => '两次输入的密码不一致。',
         ]);
 

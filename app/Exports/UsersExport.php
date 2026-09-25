@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
  * 使用 FromQuery + chunk 流式读取：大表不整表加载进内存，
  * 且导出内容与列表页「当前筛选条件」保持一致（同源数据）。
  */
-class UsersExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class UsersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function __construct(protected ?string $keyword = null)
     {

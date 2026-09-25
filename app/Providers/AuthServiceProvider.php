@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\PermissionRegistrar;
@@ -32,7 +33,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         Gate::before(function ($user, string $ability) {
             // admin 角色拥有全部权限
-            if ($user->hasRole(\App\Models\User::ROLE_ADMIN)) {
+            if ($user->hasRole(User::ROLE_ADMIN)) {
                 return true;
             }
 

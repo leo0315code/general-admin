@@ -83,4 +83,33 @@ class AuditLogTest extends TestCase
 
         $this->assertSame(0, OperationLog::query()->count());
     }
+
+    public function test_prune_removes_logs_older_than_retention_period(): void
+    {
+        // 91 天前的旧日志（超出保留期）+ 1 条新日志
+        $old = OperationLog::query()->create([
+            'username' => '旧用户',
+            'method' => 'POST',
+            'action' => '登录',
+            'description' => '历史日志',
+        ]);
+        $old->setCreatedAt(now()->subDays(OperationLog::RETENTION_DAYS + 1));
+        $old->save();
+
+        OperationLog::query()->create([
+            'username' => '新用户',
+            'method' => 'POST',
+            'action' => '登录',
+            'description' => '最近日志',
+            'created_at' => now(),
+        ]);
+
+        $this->assertSame(2, OperationLog::query()->count());
+
+        // 执行 Laravel 内置 model:prune，旧日志应被清理
+        $this->artisan('model:prune')->assertSuccessful();
+
+        $this->assertSame(1, OperationLog::query()->count());
+        $this->assertDatabaseHas('operation_logs', ['username' => '新用户']);
+    }
 }

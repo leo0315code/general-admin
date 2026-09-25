@@ -20,10 +20,9 @@ class ListQuery
     /**
      * 一次性解析 [per_page, sort, sort_dir]。
      *
-     * @param  Request  $request
      * @param  list<string>  $allowedColumns  允许排序的字段白名单
      * @param  string  $defaultSort  保留参数（默认排序字段说明，供未来扩展；当前列表默认走 latest()）
-     * @return array{0: int, 1: string|null, 2: string}  [每页条数, 排序列(null=默认), 排序方向]
+     * @return array{0: int, 1: string|null, 2: string} [每页条数, 排序列(null=默认), 排序方向]
      */
     public static function resolve(Request $request, array $allowedColumns, string $defaultSort = 'id'): array
     {

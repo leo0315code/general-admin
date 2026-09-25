@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -112,6 +113,63 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/');
+    }
+
+    public function test_login_is_rate_limited_per_ip_not_per_username(): void
+    {
+        // 同一 IP 连续 5 次密码错误（验证码正确）后触发限流
+        RateLimiter::clear('127.0.0.1');
+
+        foreach (['测试用户甲', '测试用户乙', '测试用户丙', '测试用户丁', '测试用户戊'] as $i => $name) {
+            User::factory()->create(['name' => $name]);
+
+            session(['login_captcha' => '1234']);
+
+            $this->post(route('login'), [
+                'username' => $name,
+                'password' => 'wrong-password',
+                'captcha' => '1234',
+            ]);
+        }
+
+        // 第 6 次换全新用户名 + 正确密码，仍被限流 → 证明无法通过切换用户名绕过
+        session(['login_captcha' => '1234']);
+
+        $response = $this->post(route('login'), [
+            'username' => '全新用户名',
+            'password' => 'wrong-password',
+            'captcha' => '1234',
+        ]);
+
+        $response->assertSessionHasErrors('username');
+        $this->assertGuest();
+    }
+
+    public function test_captcha_failure_also_consumes_rate_limit(): void
+    {
+        RateLimiter::clear('127.0.0.1');
+
+        // 验证码错误同样计次：5 次后第 6 次即使验证码正确也被限流
+        for ($i = 0; $i < 5; $i++) {
+            session(['login_captcha' => '1234']);
+
+            $this->post(route('login'), [
+                'username' => '验证码爆破用户',
+                'password' => 'wrong-password',
+                'captcha' => '9999',
+            ]);
+        }
+
+        session(['login_captcha' => '1234']);
+
+        $response = $this->post(route('login'), [
+            'username' => '验证码爆破用户',
+            'password' => 'wrong-password',
+            'captcha' => '1234',
+        ]);
+
+        $response->assertSessionHasErrors('username');
+        $this->assertGuest();
     }
 
     public function test_login_ignores_stale_intended_url_outside_admin_prefix(): void

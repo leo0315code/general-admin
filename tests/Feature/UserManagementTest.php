@@ -148,13 +148,13 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('users.reset-password', $user), [
-                'new_password' => 'brand-new-password',
-                'new_password_confirmation' => 'brand-new-password',
+                'new_password' => 'brandnew123456',
+                'new_password_confirmation' => 'brandnew123456',
             ])
             ->assertRedirect(route('users.edit', $user));
 
         $this->assertTrue(
-            Hash::check('brand-new-password', $user->fresh()->password)
+            Hash::check('brandnew123456', $user->fresh()->password)
         );
     }
 

@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Support\Captcha;
+use App\Support\OperationLogger;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -47,9 +49,11 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // 校验验证码（一次性，校验后清除）
-        if (! \App\Support\Captcha::verify($this->string('captcha'))) {
-            \App\Support\OperationLogger::log(
+        // 校验验证码（一次性，校验后清除）；验证码错误同样消耗限流额度
+        if (! Captcha::verify($this->string('captcha'))) {
+            RateLimiter::hit($this->throttleKey());
+
+            OperationLogger::log(
                 null,
                 $this->string('username'),
                 'POST',
@@ -75,12 +79,12 @@ class LoginRequest extends FormRequest
         ];
 
         // 停用校验：账号 status=0 不允许登录（即使密码正确）
-        $account = \App\Models\User::query()
+        $account = User::query()
             ->where($field, $username)
             ->first();
 
         if ($account && ! $account->isActive()) {
-            \App\Support\OperationLogger::log(
+            OperationLogger::log(
                 $account->id,
                 $account->name,
                 'POST',
@@ -99,7 +103,7 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
-            \App\Support\OperationLogger::log(
+            OperationLogger::log(
                 null,
                 $username,
                 'POST',
@@ -143,9 +147,13 @@ class LoginRequest extends FormRequest
 
     /**
      * Get the rate limiting throttle key for the request.
+     *
+     * 按客户端 IP 维度限流（不再拼接 username）：
+     * 若以 username 参与 key，攻击者切换用户名即可无限绕过限流；
+     * 纯 IP 限流对暴力破解/撞库更有效（5 次/分钟）。
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('username')).'|'.$this->ip());
+        return (string) $this->ip();
     }
 }

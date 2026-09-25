@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Role;
@@ -90,6 +91,8 @@ class UserController extends Controller
     /** 编辑用户表单 */
     public function edit(User $user): View
     {
+        Gate::authorize('users.update');
+
         $user->load('roles:id,name');
         $roles = Role::query()->orderBy('id')->get();
         $userRoleIds = $user->roles->pluck('id')->all();
@@ -133,10 +136,12 @@ class UserController extends Controller
         Gate::authorize('users.reset-password');
 
         $request->validate([
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+            'new_password' => ['required', 'confirmed', Password::defaults()],
         ], [
             'new_password.required' => '请输入新密码。',
-            'new_password.min' => '新密码至少需要 8 个字符。',
+            'new_password.min' => '新密码至少需要 10 个字符，且需同时包含字母与数字。',
+            'new_password.letters' => '新密码需包含字母。',
+            'new_password.numbers' => '新密码需包含数字。',
             'new_password.confirmed' => '两次输入的新密码不一致。',
         ]);
 

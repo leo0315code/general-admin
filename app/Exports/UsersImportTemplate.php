@@ -11,7 +11,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
  *
  * 密码留空 = 系统生成随机强密码；角色留空 = editor
  */
-class UsersImportTemplate implements FromArray, WithHeadings, ShouldAutoSize
+class UsersImportTemplate implements FromArray, ShouldAutoSize, WithHeadings
 {
     public function headings(): array
     {

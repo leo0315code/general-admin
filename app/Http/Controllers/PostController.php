@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PostsExport;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
@@ -10,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * 文章管理控制器（示例 CRUD 模板）
@@ -240,8 +242,8 @@ class PostController extends Controller
     /** 导出文章数据（Excel，跟随当前搜索/状态筛选） */
     public function export(Request $request)
     {
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\PostsExport($request->query('search'), $request->query('status')),
+        return Excel::download(
+            new PostsExport($request->query('search'), $request->query('status')),
             '文章数据-'.date('YmdHis').'.xlsx'
         );
     }

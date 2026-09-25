@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
  * 使用 FromQuery + chunk 流式读取：导出与列表页「当前搜索/状态筛选」同源，
  * 大表不整表加载进内存。
  */
-class PostsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class PostsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     public function __construct(protected ?string $keyword = null, protected ?string $status = null)
     {

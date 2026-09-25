@@ -47,6 +47,9 @@ class StoreUserRequest extends FormRequest
             'email.email' => '邮箱格式不正确。',
             'email.unique' => '该邮箱已被使用。',
             'password.required' => '请输入密码。',
+            'password.min' => '密码至少需要 10 个字符，且需同时包含字母与数字。',
+            'password.letters' => '密码需包含字母。',
+            'password.numbers' => '密码需包含数字。',
             'password.confirmed' => '两次输入的密码不一致。',
         ];
     }

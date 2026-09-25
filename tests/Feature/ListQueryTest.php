@@ -39,7 +39,7 @@ class ListQueryTest extends TestCase
     public function test_valid_per_page_is_kept(): void
     {
         foreach ([10, 20, 50, 100] as $perPage) {
-            [$resolved,] = ListQuery::resolve($this->makeRequest(['per_page' => (string) $perPage]), self::ALLOWED);
+            [$resolved] = ListQuery::resolve($this->makeRequest(['per_page' => (string) $perPage]), self::ALLOWED);
             $this->assertSame($perPage, $resolved);
         }
     }
@@ -47,7 +47,7 @@ class ListQueryTest extends TestCase
     public function test_invalid_per_page_falls_back_to_default(): void
     {
         foreach (['999', 'abc', '-1', '1.5', '50;drop--'] as $bad) {
-            [$perPage,] = ListQuery::resolve($this->makeRequest(['per_page' => $bad]), self::ALLOWED);
+            [$perPage] = ListQuery::resolve($this->makeRequest(['per_page' => $bad]), self::ALLOWED);
             $this->assertSame((int) config('app.pagination', 15), $perPage, "per_page={$bad} 应回退默认");
         }
     }
@@ -66,7 +66,7 @@ class ListQueryTest extends TestCase
     public function test_invalid_sort_falls_back_to_null(): void
     {
         foreach (['evil;drop--', 'created_at);drop--', 'password', 'id asc', ''] as $bad) {
-            [, $sort,] = ListQuery::resolve($this->makeRequest(['sort' => $bad]), self::ALLOWED);
+            [, $sort] = ListQuery::resolve($this->makeRequest(['sort' => $bad]), self::ALLOWED);
             $this->assertNull($sort, "sort={$bad} 应回退默认排序");
         }
     }

@@ -18,7 +18,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes, HasRoles;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /** 内置 admin 角色标识（超级管理员，拥有全部权限） */
     public const ROLE_ADMIN = 'admin';

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Support\Captcha;
+use App\Support\OperationLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,7 +56,7 @@ class AuthenticatedSessionController extends Controller
         ])->save();
 
         // 记录登录成功
-        \App\Support\OperationLogger::log(
+        OperationLogger::log(
             $user?->id,
             $user?->name,
             'POST',
@@ -92,7 +93,7 @@ class AuthenticatedSessionController extends Controller
 
         // 记录退出登录（在 logout 前读取用户信息）
         if ($user) {
-            \App\Support\OperationLogger::log(
+            OperationLogger::log(
                 $user->id,
                 $user->name,
                 'POST',

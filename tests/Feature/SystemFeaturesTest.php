@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\OperationLog;
+use App\Models\DictType;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -125,7 +125,7 @@ class SystemFeaturesTest extends TestCase
             ])
             ->assertRedirect(route('dict-types.index'));
 
-        $typeId = \App\Models\DictType::query()->where('type', 'order_status')->value('id');
+        $typeId = DictType::query()->where('type', 'order_status')->value('id');
 
         // 创建字典项
         $this->actingAs($this->admin)
