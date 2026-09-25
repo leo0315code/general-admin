@@ -1,17 +1,25 @@
 # 通用管理后台（General Admin）
 
-基于 Laravel + Breeze（Blade/Tailwind CSS v4/Alpine.js）的现代化通用管理后台模板。
+基于 Laravel + Blade SSR + Vue 3 的现代化通用管理后台模板。
 可快速复用：CRUD 极简、**RBAC 权限基于 spatie/laravel-permission**、现代化全宽 UI、项目级暗色模式、全中文界面。
 
 ## 技术栈
 
 - Laravel 13（PHP 8.3）
-- Laravel Breeze（Blade 版）：Tailwind CSS v4 + Alpine.js，无 Vue/React/Inertia/Livewire
+- **Vue 3.5（渐进式组件化）+ 原生 JS**：列表页/表单页/全局交互（Toast / ConfirmModal / Modal / Dropdown / SubmitButton）全部组件化；布局交互（暗色切换/侧边栏折叠/全局搜索）为原生 JS。Blade 负责 SSR 骨架（路由/鉴权/分页）并通过 `vue_props()` 传初始数据
+- **Tailwind CSS v4**（项目级 `dark:` 暗色模式）
 - **MySQL**（主数据库）；测试使用 sqlite in-memory（可离线运行）
 - **spatie/laravel-permission**：角色权限（roles / permissions / model_has_roles / model_has_permissions / role_has_permissions）
 - **blade-ui-kit/blade-icons + blade-heroicons**：图标（`<x-icon name="heroicon-o-..." />`）
 - **maatwebsite/excel**：Excel 导入导出（用户/文章）
 - 未引入 Filament / Nova 等重型后台框架，业务模块可直接复制 Post 模板
+
+### 前端架构（Vue3 渐进式）
+
+- 挂载：Blade 声明 `<div data-vue-app data-component="xxx" data-props='{!! vue_props($props) !!}'>`，`resources/js/vue/bootstrap.js` 按注册表挂载
+- 组件：`resources/js/vue/components/`（列表 9 + 表单 6 + 全局 7）
+- 数据链路：控制器 → Blade 组装 props（`vue_props()` 保留中文原样，单引号属性防 JSON 截断）→ `JSON.parse` → Vue 渲染；提交仍走原生表单（CSRF / Gate 不变）
+- 全局交互桥：`window.__ui.toast / confirmModal` → 事件 → Vue 渲染；`window.Layout` 负责布局原生交互（`resources/js/app.js`）
 
 ## 功能清单
 
@@ -224,8 +232,10 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 测试使用 sqlite 内存库，无需 MySQL，可离线运行：
 
 ```bash
+composer install
+npm install && npm run build   # 前端产物（public/build，已 gitignore）
 php artisan test
-# 181 passed (575 assertions)
+# 198 passed (640 assertions)
 ```
 
 覆盖：认证（Breeze 默认）、**账号生命周期（启停拦截登录、登录痕迹、首登强制改密全流程）**、仪表盘、用户管理、**用户导入（中文表头、重名/软删查重、角色与密码校验、失败行不中断、随机密码）**、角色管理、菜单管理（菜单即权限：权限自动同步 / 删除保护 / 改名清理）、文章管理、**数据字典读取 dict()（缓存与失效）**、**操作日志审计（GET 导出留痕）**、**回收站全链路（软删 → 回收站 → 还原 → 彻底删除）**、**中文错误页（403/404/419/429/500）**、**导出跟随筛选（FromQuery 流式）**、**安全收口（PostPolicy 数据范围、最后一个 admin 保护）**、**种子数据完整性（幂等、权限与菜单双向一致、后台页面可渲染）**、RBAC 权限控制（含 QA 冒烟：直接 POST 越权拦截、侧边栏与页面可达性同源、权限保存端到端生效）。
