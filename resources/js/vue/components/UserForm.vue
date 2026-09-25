@@ -4,6 +4,7 @@
 // v-model 双向绑定保证提交瞬间不会丢失输入。
 import { ref } from 'vue';
 import Icon from './Icon.vue';
+import { useRoleSelection } from '../composables/useRoleSelection.js';
 
 const props = defineProps({
     mode: { type: String, default: 'create' }, // create | edit
@@ -22,18 +23,13 @@ const name = ref(props.old.name ?? '');
 const email = ref(props.old.email ?? '');
 const password = ref('');
 const passwordConfirmation = ref('');
-const selectedRoles = ref(
-    Array.isArray(props.old.roles) && props.old.roles.length > 0
-        ? props.old.roles.map(String)
-        : props.userRoleIds.map(String)
-);
 
-function toggleRole(id) {
-    const s = String(id);
-    const i = selectedRoles.value.indexOf(s);
-    if (i >= 0) selectedRoles.value.splice(i, 1);
-    else selectedRoles.value.push(s);
-}
+// 角色多选逻辑（useRoleSelection composable，可单测）
+const { selectedRoles, toggleRole } = useRoleSelection(
+    Array.isArray(props.old.roles) && props.old.roles.length > 0
+        ? props.old.roles
+        : props.userRoleIds
+);
 
 function fieldError(field) {
     return props.errors[field] || [];

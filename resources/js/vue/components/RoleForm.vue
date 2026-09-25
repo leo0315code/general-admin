@@ -3,6 +3,7 @@
 // 权限树按菜单扁平渲染（缩进），支持全选/全选本组；admin 角色标识只读、无删除
 import { ref } from 'vue';
 import Icon from './Icon.vue';
+import { usePermissionSelection } from '../composables/usePermissionSelection.js';
 
 const props = defineProps({
     mode: { type: String, default: 'create' }, // create | edit
@@ -20,53 +21,12 @@ const props = defineProps({
 
 const name = ref(props.old.name ?? '');
 const description = ref(props.old.description ?? '');
-const selected = ref((props.old.permissions || []).map(String));
 
-function isChecked(pid) {
-    return pid !== null && pid !== undefined && selected.value.includes(String(pid));
-}
-
-function togglePermission(pid) {
-    if (pid === null || pid === undefined) return;
-    const s = String(pid);
-    const i = selected.value.indexOf(s);
-    if (i >= 0) selected.value.splice(i, 1);
-    else selected.value.push(s);
-}
-
-// 全选本组：对组内权限 ids 批量勾选/取消（勾选状态 = 组内全部已勾选）
-function toggleGroup(row) {
-    const ids = (row.group_ids || []).map(String);
-    const allChecked = ids.length > 0 && ids.every((id) => selected.value.includes(id));
-    if (allChecked) {
-        selected.value = selected.value.filter((s) => !ids.includes(s));
-    } else {
-        ids.forEach((id) => {
-            if (!selected.value.includes(id)) selected.value.push(id);
-        });
-    }
-}
-
-function groupChecked(row) {
-    const ids = (row.group_ids || []).map(String);
-    return ids.length > 0 && ids.every((id) => selected.value.includes(id));
-}
-
-// 全选 / 取消全选
-const allChecked = ref(false);
-function toggleAll(source) {
-    const checkable = props.permissionRows
-        .map((r) => r.permission_id)
-        .filter((pid) => pid !== null && pid !== undefined)
-        .map(String);
-    if (source) {
-        checkable.forEach((id) => {
-            if (!selected.value.includes(id)) selected.value.push(id);
-        });
-    } else {
-        selected.value = selected.value.filter((s) => !checkable.includes(s));
-    }
-}
+// 权限树选择逻辑（usePermissionSelection composable，可单测）
+const { selected, togglePermission, toggleGroup, groupChecked, toggleAll, isChecked } = usePermissionSelection(
+    props.old.permissions ?? [],
+    props.permissionRows
+);
 
 function typeBadge(type) {
     if (type === 'dir') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300';

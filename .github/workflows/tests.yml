@@ -44,7 +44,8 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install JS dependencies
-        run: npm ci
+        # --legacy-peer-deps：vite 8 超出 vitest peer 声明范围，严格解析会失败
+        run: npm ci --legacy-peer-deps
 
       - name: Prepare environment
         run: |
@@ -63,6 +64,9 @@ jobs:
 
       - name: Build frontend assets
         run: npm run build
+
+      - name: Frontend unit tests
+        run: npm run test:unit
 
       - name: Run test suite
         run: php artisan test
