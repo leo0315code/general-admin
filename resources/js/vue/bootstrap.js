@@ -14,6 +14,9 @@ import MenuForm from './components/MenuForm.vue';
 import MenusIndex from './components/MenusIndex.vue';
 import PostsIndex from './components/PostsIndex.vue';
 import ProfileForm from './components/ProfileForm.vue';
+import PasswordSetupForm from './components/PasswordSetupForm.vue';
+import ConfirmPasswordForm from './components/ConfirmPasswordForm.vue';
+import VerifyEmailPage from './components/VerifyEmailPage.vue';
 import PostsTrash from './components/PostsTrash.vue';
 import PostForm from './components/PostForm.vue';
 import RoleForm from './components/RoleForm.vue';
@@ -35,6 +38,9 @@ const registry = {
     'menus-index': MenusIndex,
     'posts-index': PostsIndex,
     'profile-form': ProfileForm,
+    'password-setup-form': PasswordSetupForm,
+    'confirm-password-form': ConfirmPasswordForm,
+    'verify-email-page': VerifyEmailPage,
     'posts-trash': PostsTrash,
     'post-form': PostForm,
     'role-form': RoleForm,

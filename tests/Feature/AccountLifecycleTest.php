@@ -123,12 +123,13 @@ class AccountLifecycleTest extends TestCase
         $this->loginAs('user10@example.com')
             ->assertRedirect(route('password.setup'));
 
-        // 改密页可访问，展示中文提示
+        // 改密页可访问，挂载 Vue 改密表单（标题由 JS 渲染，断言挂载点与提交地址）
         $this->app['auth']->forgetGuards();
         $this->actingAs($user->fresh())
             ->get(route('password.setup'))
             ->assertOk()
-            ->assertSee('首次登录，请设置新密码');
+            ->assertSee('password-setup-form')
+            ->assertSee(route('password.setup.update'));
 
         // 提交新密码 → 清除标志并进入后台
         $this->actingAs($user->fresh())
