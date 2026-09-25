@@ -190,4 +190,29 @@ class UserManagementTest extends TestCase
     {
         $this->get(route('users.index'))->assertRedirect(route('login'));
     }
+
+    public function test_admin_can_bulk_delete_users_within_transaction(): void
+    {
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+
+        $this->actingAs($this->admin)
+            ->post(route('users.bulk-delete'), ['ids' => [$a->id, $b->id]])
+            ->assertRedirect();
+
+        $this->assertSoftDeleted('users', ['id' => $a->id]);
+        $this->assertSoftDeleted('users', ['id' => $b->id]);
+    }
+
+    public function test_bulk_delete_skips_self_and_last_admin(): void
+    {
+        // admin 是唯一启用的管理员：既跳过自己，又因「最后 admin」双重保护被跳过
+        $other = User::factory()->create();
+
+        $this->actingAs($this->admin)
+            ->post(route('users.bulk-delete'), ['ids' => [$this->admin->id, $other->id]]);
+
+        $this->assertNotSoftDeleted('users', ['id' => $this->admin->id]);
+        $this->assertSoftDeleted('users', ['id' => $other->id]);
+    }
 }

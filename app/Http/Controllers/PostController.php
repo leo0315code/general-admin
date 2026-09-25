@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -171,22 +172,24 @@ class PostController extends Controller
         $deleted = 0;
         $skipped = 0;
 
-        foreach ($this->validatedIds($request) as $id) {
-            $post = Post::query()->find($id);
+        DB::transaction(function () use ($request, &$deleted, &$skipped) {
+            foreach ($this->validatedIds($request) as $id) {
+                $post = Post::query()->find($id);
 
-            if (! $post) {
-                continue;
+                if (! $post) {
+                    continue;
+                }
+
+                if (! $request->user()->can('delete', $post)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $post->delete();
+                $deleted++;
             }
-
-            if (! $request->user()->can('delete', $post)) {
-                $skipped++;
-
-                continue;
-            }
-
-            $post->delete();
-            $deleted++;
-        }
+        });
 
         $message = "已删除 {$deleted} 篇文章。";
 

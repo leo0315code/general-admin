@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -202,7 +203,7 @@ class UserController extends Controller
             ->with('success', "用户「{$user->name}」已删除（软删除）。");
     }
 
-    /** 批量删除用户（软删除；跳过自己与最后一个启用的 admin） */
+    /** 批量删除用户（软删除；跳过自己与最后一个启用的 admin；整体事务） */
     public function bulkDestroy(Request $request): RedirectResponse
     {
         Gate::authorize('user.manage');
@@ -210,22 +211,24 @@ class UserController extends Controller
         $deleted = 0;
         $skipped = 0;
 
-        foreach ($this->validatedIds($request) as $id) {
-            $user = User::query()->find($id);
+        DB::transaction(function () use ($request, &$deleted, &$skipped) {
+            foreach ($this->validatedIds($request) as $id) {
+                $user = User::query()->find($id);
 
-            if (! $user) {
-                continue;
+                if (! $user) {
+                    continue;
+                }
+
+                if ($user->is(auth()->user()) || $this->isLastActiveAdmin($user)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $user->delete();
+                $deleted++;
             }
-
-            if ($user->is(auth()->user()) || $this->isLastActiveAdmin($user)) {
-                $skipped++;
-
-                continue;
-            }
-
-            $user->delete();
-            $deleted++;
-        }
+        });
 
         $message = "已删除 {$deleted} 个用户。";
 
@@ -236,7 +239,7 @@ class UserController extends Controller
         return back()->with('success', $message);
     }
 
-    /** 批量切换账号启停状态（跳过自己与最后一个启用的 admin） */
+    /** 批量切换账号启停状态（跳过自己与最后一个启用的 admin；整体事务） */
     public function bulkToggleStatus(Request $request): RedirectResponse
     {
         Gate::authorize('user.manage');
@@ -244,28 +247,30 @@ class UserController extends Controller
         $changed = 0;
         $skipped = 0;
 
-        foreach ($this->validatedIds($request) as $id) {
-            $user = User::query()->find($id);
+        DB::transaction(function () use ($request, &$changed, &$skipped) {
+            foreach ($this->validatedIds($request) as $id) {
+                $user = User::query()->find($id);
 
-            if (! $user) {
-                continue;
+                if (! $user) {
+                    continue;
+                }
+
+                if ($user->is(auth()->user())) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                if ($user->isActive() && $this->isLastActiveAdmin($user)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $user->update(['status' => ! $user->isActive()]);
+                $changed++;
             }
-
-            if ($user->is(auth()->user())) {
-                $skipped++;
-
-                continue;
-            }
-
-            if ($user->isActive() && $this->isLastActiveAdmin($user)) {
-                $skipped++;
-
-                continue;
-            }
-
-            $user->update(['status' => ! $user->isActive()]);
-            $changed++;
-        }
+        });
 
         $message = "已更新 {$changed} 个用户的状态。";
 
@@ -376,10 +381,11 @@ class UserController extends Controller
         Gate::authorize('users.import');
 
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:5120'],
         ], [
             'file.required' => '请选择要导入的文件。',
             'file.mimes' => '仅支持 xlsx / xls 格式。',
+            'file.max' => '导入文件不能超过 5MB。',
         ]);
 
         UsersImport::reset();

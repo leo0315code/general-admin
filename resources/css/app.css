@@ -15,8 +15,9 @@
  * 旧视图即使未改造也正常编译渲染；10 个既有工具类仅内部指向 token，视觉不变。
  */
 @theme {
-    --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-        'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    /* 中文优先的系统字体栈（不加载外部字体，避免国内网络阻塞与外部依赖） */
+    --font-sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif, system-ui,
+        -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
     /* 主色（indigo） */
     --color-primary-50:  oklch(0.962 0.018 272.314);

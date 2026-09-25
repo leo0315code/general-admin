@@ -166,4 +166,16 @@ class UserImportTest extends TestCase
         $this->post(route('users.import'), ['file' => $this->makeImportFile([['x', 'x@example.com', '', 'editor']])])
             ->assertRedirect(route('login'));
     }
+
+    public function test_import_rejects_file_larger_than_5mb(): void
+    {
+        // 构造一个超过 max:5120 的假文件（无需真实 xlsx 内容，校验先于解析）
+        $before = User::query()->count();
+        $big = UploadedFile::fake()->create('big.xlsx', 6000, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $this->post(route('users.import'), ['file' => $big])
+            ->assertSessionHasErrors('file');
+
+        $this->assertSame($before, User::query()->count());
+    }
 }

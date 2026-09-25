@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Imports\HeadingRowFormatter;
 use Spatie\Permission\Models\Role;
@@ -21,13 +22,19 @@ use Spatie\Permission\Models\Role;
  * - 角色选填：为空默认 editor，须为已存在的角色标识，否则整行跳过
  * - 导入过程中收集错误行，控制器统一提示；单行失败不影响其它行
  */
-class UsersImport implements SkipsEmptyRows, ToModel, WithHeadingRow
+class UsersImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithHeadingRow
 {
     /** 成功导入数量 */
     public static int $created = 0;
 
     /** 错误行信息列表 */
     public static array $errors = [];
+
+    /** 分块读取大小（降低大文件内存占用，每块自动事务） */
+    public function chunkSize(): int
+    {
+        return 500;
+    }
 
     /** 重置统计（每次导入前调用） */
     public static function reset(): void

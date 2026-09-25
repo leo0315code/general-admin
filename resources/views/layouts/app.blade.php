@@ -10,10 +10,6 @@
 
         <title>{{ config('app.name', '通用管理后台') }}@isset($title) - {{ $title }}@endisset</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -115,7 +111,7 @@
 
                             <x-slot name="content">
                                 <div class="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                                    {{ Auth::user()->email }}
+                                    {{ Auth::user()->email ?: '未设置邮箱' }}
                                 </div>
                                 <x-dropdown-link :href="route('profile.edit')">
                                     <x-icon name="heroicon-o-user-circle" class="h-5 w-5 text-gray-400" />
