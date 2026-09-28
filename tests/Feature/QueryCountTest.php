@@ -63,4 +63,31 @@ class QueryCountTest extends TestCase
 
         $this->assertLessThanOrEqual(8, $queries, "文章列表 SQL 数 {$queries} 超过 8，疑似引入 N+1");
     }
+
+    /**
+     * 侧边栏导航缓存命中：首次请求后 menus.tree 缓存预热，
+     * 第二次请求不应再出现 menus 表查询（P1 导航缓存回归）。
+     */
+    public function test_second_request_skips_menus_query_via_cache(): void
+    {
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        app(PermissionRegistrar::class)->getPermissions();
+        $admin->can('dashboard.view');
+
+        // 第一次请求：预热 menus.tree 缓存
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+
+        // 第二次请求：命中缓存，查询日志中不应有 menus 表查询
+        DB::enableQueryLog();
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk();
+        $menusQueries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->contains(fn (string $sql): bool => str_contains($sql, 'menus'));
+
+        $this->assertFalse(
+            $menusQueries,
+            '导航缓存命中后仍出现 menus 表查询，缓存可能未生效：'.implode(' | ', collect(DB::getQueryLog())->pluck('query')->all())
+        );
+    }
 }
