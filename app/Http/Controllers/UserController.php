@@ -9,6 +9,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Imports\UsersImport;
 use App\Models\User;
+use App\Notifications\AccountCredentials;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,11 +17,13 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Permission\Models\Role;
+use Throwable;
 
 /**
  * 用户管理控制器（基于 spatie/laravel-permission）
@@ -90,6 +93,9 @@ class UserController extends Controller
 
         $user->syncRoles($request->validated('roles', []));
 
+        // 新建账号：告知初始密码（失败不影响创建结果）
+        $this->notifyCredentials($user, (string) $request->validated('password'), 'created');
+
         return redirect()
             ->route('users.index')
             ->with('success', "用户「{$user->name}」创建成功。");
@@ -158,9 +164,37 @@ class UserController extends Controller
             'must_change_password' => true,
         ]);
 
+        // 重置密码：告知新密码（失败不影响重置结果）
+        $this->notifyCredentials($user, (string) $request->input('new_password'), 'reset');
+
         return redirect()
             ->route('users.edit', $user)
             ->with('success', "用户「{$user->name}」的密码已重置，下次登录需修改密码。");
+    }
+
+    /**
+     * 发送账号凭据邮件（新建 / 重置密码）。
+     *
+     * 两处兜底：
+     * - 用户未填邮箱（email 可为空）→ 直接跳过，不尝试发送；
+     * - 邮件通道异常（SMTP 未配置/不可达）→ 记日志后继续，
+     *   绝不让后台操作因发信失败而中断（密码已改，通知失败不能回滚业务）。
+     */
+    protected function notifyCredentials(User $user, string $plainPassword, string $scene): void
+    {
+        if (blank($user->email)) {
+            return;
+        }
+
+        try {
+            $user->notify(new AccountCredentials($plainPassword, $scene));
+        } catch (Throwable $e) {
+            Log::warning('账号凭据邮件发送失败', [
+                'user_id' => $user->id,
+                'scene' => $scene,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** 切换账号启停状态（禁止停用自己；最后一个启用 admin 不可停用） */
