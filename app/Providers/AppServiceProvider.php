@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
@@ -25,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Vite 生成的 script/link 标签带上 CSP nonce：与 SecurityHeaders 的
+        // script-src 'nonce-…' 保持一致（构建产物为外部文件，本可由 'self' 放行，
+        // 显式加 nonce 是为了让「所有脚本标签统一带 nonce」成为可断言的不变量）。
+        Vite::useCspNonce();
+
         // 全局密码强度策略（所有 Password::defaults() 生效处统一约束）：
         // 至少 10 位，同时包含字母与数字；生产环境追加泄露密码库校验。
         // 测试/本地环境不校验 uncompromised（避免依赖 HIBP 网络请求）。

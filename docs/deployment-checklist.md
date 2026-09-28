@@ -25,6 +25,7 @@ php artisan key:generate --force
 ## 2. 环境与网络
 
 - [ ] 全站 HTTPS，并确认 `SecurityHeaders` 中间件生效（`APP_ENV=production` 时自动追加 HSTS + CSP）
+- [ ] CSP 已收紧为 `script-src 'self' 'nonce-…'`（每请求随机 nonce）：**新增内联脚本必须带 `nonce="{{ Vite::cspNonce() }}"`，否则浏览器拦截导致白屏**；`SecurityHeadersTest` 会拦截漏加 nonce 的情况
 - [ ] `APP_URL` 与实际域名一致（影响生成链接、密码重置）
 - [ ] 生产只放行 `public/` 目录（nginx root 指向 `public`，禁止访问 `storage/`、`vendor/`、`.env`）
 - [ ] `storage/`、`bootstrap/cache` 目录可写：`php artisan storage:link`（若有公开磁盘）

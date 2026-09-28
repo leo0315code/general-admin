@@ -13,13 +13,14 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        {{-- 顶栏全局搜索数据源：当前用户可见菜单（客户端过滤） --}}
-        <script>
+        {{-- 顶栏全局搜索数据源：当前用户可见菜单（客户端过滤）
+             nonce：生产 CSP 的 script-src 只放行带 nonce 的内联脚本（SecurityHeaders） --}}
+        <script nonce="{{ Vite::cspNonce() }}">
             window.__navGroups = @json($navGroups);
         </script>
 
         {{-- 防止暗色模式闪烁：在 CSS 加载前先根据 localStorage/系统偏好设置 .dark 类 --}}
-        <script>
+        <script nonce="{{ Vite::cspNonce() }}">
             (function () {
                 const saved = localStorage.getItem('theme');
                 const dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);

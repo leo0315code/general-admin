@@ -12,7 +12,7 @@
 
         {{-- 防止暗色模式闪烁：在 CSS 加载前先根据 localStorage/系统偏好设置 .dark 类
              （支持 ?theme=light / ?theme=dark 强制指定，便于预览） --}}
-        <script>
+        <script nonce="{{ Vite::cspNonce() }}">
             (function () {
                 const urlTheme = new URLSearchParams(window.location.search).get('theme');
                 const saved = urlTheme || localStorage.getItem('theme');

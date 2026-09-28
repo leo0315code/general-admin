@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ config('app.name', '通用管理后台') }} · 419 会话已过期</title>
         @vite(['resources/css/app.css'])
-        <script>
+        <script nonce="{{ Vite::cspNonce() }}">
             (function () {
                 const saved = localStorage.getItem('theme');
                 const dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);

@@ -58,10 +58,74 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('Strict-Transport-Security');
         $response->assertHeader('Content-Security-Policy');
 
-        $this->assertStringContainsString('default-src', (string) $response->headers->get('Content-Security-Policy'));
-        $this->assertStringContainsString("script-src 'self' 'unsafe-inline'", (string) $response->headers->get('Content-Security-Policy'));
+        $csp = (string) $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString('default-src', $csp);
+        // 脚本不再放行 unsafe-inline，改为每请求 nonce
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $csp);
+        $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-[^']+'/", $csp);
+        // 样式保留 unsafe-inline（Vue :style 绑定无法用 nonce）
+        $this->assertStringContainsString("style-src 'self' 'unsafe-inline'", $csp);
 
         // 恢复环境，避免影响后续测试
         $this->app->detectEnvironment(fn () => 'testing');
+    }
+
+    /**
+     * 生产 CSP 收紧后，任何漏加 nonce 的内联脚本都会被浏览器拦截（页面白屏）。
+     * 这里扫描关键页面的响应体，保证「内联脚本必然带 nonce」这一不变量。
+     */
+    public function test_all_inline_scripts_carry_csp_nonce(): void
+    {
+        $admin = User::query()->where('email', 'admin@example.com')->firstOrFail();
+
+        // expectInline：该页面是否应存在内联脚本（登录页为纯 Vue 挂载，无内联脚本）
+        $pages = [
+            'dashboard（已登录）' => [
+                'render' => fn () => $this->actingAs($admin)->get(route('dashboard')),
+                'expectInline' => true,
+            ],
+            '登录页' => [
+                'render' => fn () => $this->get(route('login')),
+                'expectInline' => false,
+            ],
+            // 错误页直接渲染视图（走 HTTP 会被 testing 环境的异常页替换，测不到真实模板）
+            '404 错误页' => [
+                'render' => fn () => view('errors.404')->render(),
+                'expectInline' => true,
+            ],
+            '500 错误页' => [
+                'render' => fn () => view('errors.500')->render(),
+                'expectInline' => true,
+            ],
+        ];
+
+        foreach ($pages as $label => $page) {
+            $render = $page['render'];
+            $result = $render();
+            $html = is_string($result) ? $result : (string) $result->getContent();
+
+            preg_match_all('/<script\b[^>]*>/i', $html, $matches);
+
+            $inline = 0;
+            foreach ($matches[0] as $tag) {
+                // 外部脚本（有 src）由 'self' 放行，不需要 nonce
+                if (str_contains($tag, 'src=')) {
+                    continue;
+                }
+
+                $inline++;
+                $this->assertMatchesRegularExpression(
+                    '/nonce=/i',
+                    $tag,
+                    "{$label} 存在未加 nonce 的内联脚本，生产环境会被 CSP 拦截：{$tag}"
+                );
+            }
+
+            if ($page['expectInline']) {
+                $this->assertGreaterThan(0, $inline, "{$label} 未渲染内联脚本，请确认模板是否改动");
+            } else {
+                $this->assertSame(0, $inline, "{$label} 出现内联脚本，请补 nonce 并更新本用例预期");
+            }
+        }
     }
 }
