@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Navigation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -59,6 +60,16 @@ class Menu extends Model
             'sort' => 'integer',
             'status' => 'boolean',
         ];
+    }
+
+    /**
+     * 模型事件：菜单增删改后自动失效导航缓存（Navigation::CACHE_KEY）。
+     * 挂在模型层而非控制器，覆盖工厂 / 脚本 / tinker 等全部写路径。
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn () => Navigation::flush());
+        static::deleted(fn () => Navigation::flush());
     }
 
     /** 父节点 */
