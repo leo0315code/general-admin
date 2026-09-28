@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\UsersExport;
+use App\Exports\UsersImportErrorsExport;
 use App\Exports\UsersImportTemplate;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -11,9 +12,11 @@ use App\Models\User;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -28,6 +31,9 @@ class UserController extends Controller
 {
     /** 每页显示数量 */
     protected const PER_PAGE = 15;
+
+    /** 导入失败明细缓存键前缀（+ token） */
+    protected const IMPORT_ERRORS_PREFIX = 'users.import-errors.';
 
     /** 用户列表：分页 + 关键字搜索（姓名/邮箱）+ 每页条数/排序（ListQuery 白名单） */
     public function index(Request $request): View
@@ -403,9 +409,47 @@ class UserController extends Controller
             $message .= ' 失败 '.count($errors).' 条。';
         }
 
-        return back()
-            ->with('success', $message)
-            ->with('import_errors', $errors);
+        $redirect = back()->with('success', $message);
+
+        if ($errors !== []) {
+            $redirect->with('import_errors', $errors)
+                ->with('import_errors_token', $this->cacheImportErrors(UsersImport::$failedRows));
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * 下载上次导入的失败明细（xlsx）。
+     *
+     * 明细暂存缓存 10 分钟并用一次性 token 换取：既不把若干行数据塞进 session
+     * （flash 体积有限），也不在 URL 里暴露用户信息。
+     */
+    public function downloadImportErrors(string $token)
+    {
+        Gate::authorize('users.import');
+
+        $rows = Cache::pull(self::IMPORT_ERRORS_PREFIX.$token);
+
+        if (! $rows) {
+            return redirect()
+                ->route('users.index')
+                ->with('error', '失败明细已过期，请重新导入后下载。');
+        }
+
+        return Excel::download(
+            new UsersImportErrorsExport($rows),
+            '用户导入失败明细_'.now()->format('Ymd_His').'.xlsx'
+        );
+    }
+
+    /** 暂存失败明细并返回下载 token（10 分钟有效，下载时一次性消费） */
+    protected function cacheImportErrors(array $rows): string
+    {
+        $token = Str::random(40);
+        Cache::put(self::IMPORT_ERRORS_PREFIX.$token, $rows, now()->addMinutes(10));
+
+        return $token;
     }
 
     /**

@@ -63,6 +63,8 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
         Route::get('users/export', [UserController::class, 'export'])->name('users.export');
         Route::get('users/import-template', [UserController::class, 'importTemplate'])->name('users.import-template');
         Route::post('users/import', [UserController::class, 'import'])->name('users.import');
+        Route::get('users/import-errors/{token}', [UserController::class, 'downloadImportErrors'])
+            ->name('users.import-errors');
     });
 
     // 角色管理：需要 role.manage 权限（与侧边栏菜单判定同源，避免"看得到点不开"）

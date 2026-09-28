@@ -27,8 +27,15 @@ class UsersImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithHead
     /** 成功导入数量 */
     public static int $created = 0;
 
-    /** 错误行信息列表 */
+    /** 错误行信息列表（人类可读文本，供 flash 提示） */
     public static array $errors = [];
+
+    /**
+     * 结构化失败行（供导出下载，失败原因可回溯后修正重传）。
+     *
+     * @var list<array{name: string, email: string, role: string, reason: string}>
+     */
+    public static array $failedRows = [];
 
     /** 分块读取大小（降低大文件内存占用，每块自动事务） */
     public function chunkSize(): int
@@ -41,6 +48,23 @@ class UsersImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithHead
     {
         self::$created = 0;
         self::$errors = [];
+        self::$failedRows = [];
+    }
+
+    /**
+     * 记录一行失败：文本提示 + 结构化行同时落库，避免两处逻辑分叉。
+     *
+     * @param  array<string, mixed>  $row
+     */
+    protected static function fail(string $reason, array $row): void
+    {
+        self::$errors[] = $reason;
+        self::$failedRows[] = [
+            'name' => trim((string) ($row['姓名'] ?? '')),
+            'email' => trim((string) ($row['邮箱'] ?? '')),
+            'role' => trim((string) ($row['角色'] ?? '')),
+            'reason' => $reason,
+        ];
     }
 
     public function __construct()
@@ -57,21 +81,21 @@ class UsersImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithHead
 
         // 基础校验
         if ($name === '' || $email === '') {
-            self::$errors[] = '行缺失姓名或邮箱：'.json_encode($row, JSON_UNESCAPED_UNICODE);
+            self::fail('行缺失姓名或邮箱', $row);
 
             return null;
         }
 
         // 邮箱唯一（含软删除记录：软删行的 email/name 仍占用唯一索引）
         if (User::query()->withTrashed()->where('email', $email)->exists()) {
-            self::$errors[] = "邮箱 {$email} 已存在，已跳过";
+            self::fail("邮箱 {$email} 已存在", $row);
 
             return null;
         }
 
         // 姓名唯一（含软删除记录）—— 缺此校验会撞 users.name 唯一索引导致整批 500
         if (User::query()->withTrashed()->where('name', $name)->exists()) {
-            self::$errors[] = "姓名 {$name} 已存在，已跳过";
+            self::fail("姓名 {$name} 已存在", $row);
 
             return null;
         }
@@ -81,7 +105,7 @@ class UsersImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithHead
         if ($password === '') {
             $password = Str::password(16);
         } elseif (mb_strlen($password) < 8) {
-            self::$errors[] = "用户 {$name}（{$email}）密码少于 8 位，已跳过";
+            self::fail("密码少于 8 位（姓名：{$name}）", $row);
 
             return null;
         }
@@ -89,7 +113,7 @@ class UsersImport implements SkipsEmptyRows, ToModel, WithChunkReading, WithHead
         // 角色：须为已存在的角色标识，否则整行跳过（避免 syncRoles 抛异常中断整批）
         $roleName = trim((string) ($row['角色'] ?? '')) ?: User::ROLE_EDITOR;
         if (! Role::query()->where('name', $roleName)->exists()) {
-            self::$errors[] = "用户 {$name}（{$email}）指定角色「{$roleName}」不存在，已跳过";
+            self::fail("指定角色「{$roleName}」不存在（姓名：{$name}）", $row);
 
             return null;
         }

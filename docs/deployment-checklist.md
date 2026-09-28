@@ -2,6 +2,15 @@
 
 > 上线前逐项核对。当前 `.env` 为本地开发配置，**不可直接用于生产**。
 
+## 0. 起点：用生产模板生成 `.env`
+
+```bash
+cp .env.production.example .env     # 模板已把生产该关的都关好（占位符 REPLACE_ME 需全部替换）
+php artisan key:generate --force
+```
+
+> 模板文件 `.env.production.example` 已在仓库中（`.env.production` 本身被 gitignore，防止真实密钥入库）。
+
 ## 1. 必改项（P0，阻断级）
 
 | 项 | 本地值（错误示范） | 生产要求 |

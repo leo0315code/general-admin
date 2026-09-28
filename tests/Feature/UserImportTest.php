@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -177,5 +178,57 @@ class UserImportTest extends TestCase
             ->assertSessionHasErrors('file');
 
         $this->assertSame($before, User::query()->count());
+    }
+
+    public function test_failed_rows_can_be_downloaded_as_xlsx(): void
+    {
+        // 第一行合法；第二行邮箱与已存在的 admin 冲突 → 失败；第三行角色不存在 → 失败
+        $response = $this->postImport([
+            ['张三', 'zhangsan@example.com', '', 'editor'],
+            ['重名邮箱', 'admin@example.com', '', 'editor'],
+            ['王五', 'wangwu@example.com', '', 'no-such-role'],
+        ]);
+
+        $response->assertRedirect();
+        $token = session('import_errors_token');
+        $this->assertNotEmpty($token, '存在失败行时应给出下载 token');
+
+        // 结构化失败行：两条，含姓名/邮箱/角色/原因
+        $this->assertCount(2, UsersImport::$failedRows);
+        $this->assertSame('admin@example.com', UsersImport::$failedRows[0]['email']);
+        $this->assertStringContainsString('不存在', UsersImport::$failedRows[1]['reason']);
+
+        $download = $this->get(route('users.import-errors', $token));
+        $download->assertOk();
+        $this->assertStringContainsString(
+            'attachment',
+            (string) $download->headers->get('content-disposition')
+        );
+    }
+
+    public function test_import_errors_token_is_single_use_and_expires(): void
+    {
+        $this->postImport([['重名邮箱', 'admin@example.com', '', 'editor']]);
+
+        $token = session('import_errors_token');
+        $this->get(route('users.import-errors', $token))->assertOk();
+
+        // 一次性消费：第二次访问应提示过期
+        $this->get(route('users.import-errors', $token))
+            ->assertRedirect(route('users.index'))
+            ->assertSessionHas('error');
+    }
+
+    public function test_downloading_import_errors_requires_permission(): void
+    {
+        // editor 角色权限清单为「仪表盘 + 文章管理」，不含 users.import（见 RolePermissionSeeder）
+        $editor = User::factory()->create(['must_change_password' => false]);
+        $editor->syncRoles([User::ROLE_EDITOR]);
+
+        $this->assertFalse($editor->can('users.import'));
+
+        $this->actingAs($editor)
+            ->get(route('users.import-errors', Str::random(40)))
+            ->assertForbidden();
     }
 }

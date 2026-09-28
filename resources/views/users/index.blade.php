@@ -51,6 +51,16 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
+            @if (session('import_errors_token'))
+                <a
+                    href="{{ route('users.import-errors', session('import_errors_token')) }}"
+                    class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-500/50 hover:bg-red-50 dark:hover:bg-gray-600 text-xs font-medium text-red-700 dark:text-red-300 rounded-lg transition"
+                >
+                    <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
+                    下载失败明细（xlsx）
+                </a>
+                <p class="mt-1.5 text-xs text-red-500 dark:text-red-400/70">明细链接 10 分钟内有效，可下载后修正再重传。</p>
+            @endif
         </div>
     @endif
 
