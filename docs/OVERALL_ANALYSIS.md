@@ -70,6 +70,58 @@
 
 ---
 
+## 零之二、2026-09-28 进度对账（v3）
+
+> 上一节（v2）的记录停在 **181 passed** 时代，以下内容为对账后的**当前事实**：
+> **`php artisan test` 224 passed + `npm run test:unit` 14 passed**，pint 135 files PASS，
+> composer / npm 依赖审计 **0 漏洞**。
+
+### v2 遗留项 → 已闭环
+
+| v2 编号 | 内容 | 现状（2026-09-28） |
+| --- | --- | --- |
+| 第2批-事务 | 批量操作事务化 | ✅ `UserController::bulkDestroy/bulkToggleStatus` 均已 `DB::transaction` |
+| 第2批-导入上限 | 导入文件大小/行数限制 | ✅ `mimes:xlsx,xls` + `max:5120`（5MB），Import 分块 `chunkSize=500` |
+| 第2批-失败行下载 | 失败行可导出 | ✅ `UsersImportErrorsExport` + 缓存 token 一次性下载（`users.import-errors`，10 分钟有效） |
+| 第2批-生产配置基线 | `.env.production` 模板 | ✅ `.env.production.example`（REPLACE_ME 占位、DEBUG=false、会话加密/HTTPS cookie） |
+| P2-列表能力 | 排序/每页条数/批量 | ✅ `ListQuery` 白名单解析（per_page 10/20/50/100、sort 字段白名单、sort_dir） |
+| P2-索引 | 列表查询索引 | ✅ 迁移 `2026_09_17_000010_add_listing_indexes`（users/posts/operation_logs 组合索引） |
+| P2-日志治理 | 日志清理 | ✅ `routes/console.php`：`model:prune` 每日 03:00（操作日志保留 90 天）+ 03:10 清理过期 cache 行 |
+| P2-通知队列 | 邮件通知 | ✅ `app/Notifications/AccountCredentials`（新建/重置密码两场景）；**同步发送**，无需 worker |
+| P2-dict() 辅助 | 字典读取入口 | ✅ `App\Support\Dict` + 全局 `dict()` helper，缓存 `dict.{type}` |
+| P1-登录安全 | 验证码限流/密码策略 | ✅ 登录 IP 限流 5 次/分钟 + 验证码计次；`Password::defaults()` 统一密码强度 |
+| P1-部署文档 + CI | 部署文档与流水线 | ✅ `docs/deployment-checklist.md` + `.github/workflows/tests.yml`（含 pint/build/双测试/依赖审计） |
+| P3-API | API 层 | 📄 已规划（按需实施，当前无多端需求）→ `docs/api-layer-plan.md` |
+
+### 本轮新增（2026-09-28）
+
+| 项 | 内容 | 落点 |
+| --- | --- | --- |
+| 导航缓存 | 菜单树缓存 `menus.tree`（纯标量数组），`Menu` 模型 saved/deleted 自动失效 | `Navigation.php`、`Menu::booted()`、`NavigationCacheTest` |
+| 缓存命中回归 | 断言第二次请求 SQL 日志不含 menus 表查询 | `QueryCountTest` |
+| 死代码清理 | 删除 `components/modal.blade.php`（被 Vue `ConfirmModal.vue` 取代） | — |
+| CI 安全审计 | `composer audit` + `npm audit --omit=dev` 阻断漏洞依赖 | `.github/workflows/tests.yml` |
+
+### 仍未处理（v3 剩余项）
+
+| 项 | 说明 | 建议 |
+| --- | --- | --- |
+| 附件上传基座 | `Storage::`/`UploadedFile` 使用点为 0 | 有业务需求时再做（磁盘配额、类型白名单、病毒扫描一并设计） |
+| 通知改队列 | 当前同步发送 | 接入 Redis/worker 后改 `implements ShouldQueue` 即可，调用方无需改 |
+| 失败行下载保留期 | 明细仅存 10 分钟 | 如需长期留存改为落 `storage/app` 文件 + 下载路由鉴权 |
+| 多语言切换 | 仅 `zh_CN` | 需要国际化时再引入 |
+| 部门/数据权限体系 | P3 长期项 | 按需 |
+| 监控告警/备份演练 | P3 长期项 | 上线后按运维规范补齐 |
+
+### 已复核确认"没问题"（本轮补充）
+
+- **Blade / Vue 分工**：29 个视图为 `x-vue-mount` 薄壳，交互在 Vue；列表页 header（导入/导出/回收站）保留在 Blade，权限用服务端 `@can` 判定——比把权限数据传给前端更安全，**不是双轨残留**。
+- **Alpine 残留为 0**：全站 `resources/views` 无 `x-data` / `@click` / `x-on:`。
+- **缓存序列化**：`config/cache.php` 的 `serializable_classes=false`，所有缓存层（Dict / settings / menus.tree）统一只存**标量数组**。
+- **权限缓存**：spatie `PermissionRegistrar` 24h 自动失效，无需手工清理。
+
+---
+
 ## 一、结论速览
 
 骨架**完整可用**：认证（用户名/邮箱 + 验证码 + 限流）、RBAC（Spatie + `Gate::before`）、用户/角色/文章/字典/设置/操作日志 六大模块、Excel 导入导出、暗色模式，实测 **94 个测试 / 266 个断言全部通过**。
