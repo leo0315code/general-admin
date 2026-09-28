@@ -24,6 +24,8 @@
             ], $fieldMeta[$field['key']] ?? []))->values(),
             'errors' => $errors->toArray(),
             'indexUrl' => route('settings.index'),
+            // 按钮级权限：无 settings.update 时表单只读，不显示保存按钮
+            'canUpdate' => auth()->user()?->can('settings.update') ?? false,
         ];
     @endphp
 

@@ -2,10 +2,12 @@
     <x-slot name="header">
         <x-page-header title="角色管理" description="管理角色与权限分配">
             <x-slot name="actions">
-                <a href="{{ route('roles.create') }}" class="btn-primary">
-                    <x-icon name="heroicon-o-plus" class="h-4 w-4" />
-                    新建角色
-                </a>
+                @can('roles.create')
+                    <a href="{{ route('roles.create') }}" class="btn-primary">
+                        <x-icon name="heroicon-o-plus" class="h-4 w-4" />
+                        新建角色
+                    </a>
+                @endcan
             </x-slot>
         </x-page-header>
     </x-slot>
@@ -28,6 +30,11 @@
             'currentUrl' => url()->current(),
             'query' => request()->query(),
             'roleBase' => rtrim(route('roles.index'), '/'),
+            // 按钮级权限：与服务端 Gate::authorize 保持一致
+            'can' => [
+                'update' => auth()->user()?->can('roles.update') ?? false,
+                'destroy' => auth()->user()?->can('roles.destroy') ?? false,
+            ],
         ];
     @endphp
 

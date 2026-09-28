@@ -8,6 +8,7 @@ use App\Models\Menu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
@@ -33,6 +34,8 @@ class MenuController extends Controller
     /** 新建菜单表单 */
     public function create(Request $request): View
     {
+        Gate::authorize('menus.create');
+
         return view('menus.create', [
             'parents' => $this->parentOptions(),
             'menu' => null,
@@ -45,6 +48,7 @@ class MenuController extends Controller
     /** 保存菜单并同步权限记录 */
     public function store(StoreMenuRequest $request): RedirectResponse
     {
+        Gate::authorize('menus.create');
         $menu = DB::transaction(function () use ($request): Menu {
             $menu = Menu::query()->create($this->payload($request));
             $menu->syncPermission();
@@ -60,6 +64,8 @@ class MenuController extends Controller
     /** 编辑菜单表单 */
     public function edit(Menu $menu): View
     {
+        Gate::authorize('menus.update');
+
         return view('menus.edit', [
             'menu' => $menu,
             'parents' => $this->parentOptions($menu),
@@ -72,6 +78,7 @@ class MenuController extends Controller
     /** 更新菜单并同步权限记录（含旧权限清理） */
     public function update(UpdateMenuRequest $request, Menu $menu): RedirectResponse
     {
+        Gate::authorize('menus.update');
         $oldPermissionName = $menu->permission_name;
         $warning = null;
 
@@ -109,6 +116,7 @@ class MenuController extends Controller
     /** 删除菜单（同步删除对应权限记录） */
     public function destroy(Menu $menu): RedirectResponse
     {
+        Gate::authorize('menus.destroy');
         if ($menu->children()->exists()) {
             return redirect()
                 ->route('menus.index')
@@ -138,6 +146,7 @@ class MenuController extends Controller
     /** 启用 / 停用菜单（停用后不出现在侧边栏，权限仍然保留） */
     public function toggleStatus(Menu $menu): RedirectResponse
     {
+        Gate::authorize('menus.update');
         $menu->update(['status' => ! $menu->status]);
 
         return redirect()

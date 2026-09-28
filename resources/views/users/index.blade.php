@@ -86,6 +86,7 @@
             'query' => request()->query(),
             'userBase' => rtrim(route('users.index'), '/'),
             'canManage' => auth()->user()->can('user.manage'),
+            'canUpdate' => auth()->user()->can('users.update'),
             'canDestroy' => auth()->user()->can('users.destroy'),
             'routes' => [
                 'bulk_delete' => route('users.bulk-delete'),

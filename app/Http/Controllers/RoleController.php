@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -45,12 +46,15 @@ class RoleController extends Controller
     /** 创建角色表单（带权限树复选框） */
     public function create(): View
     {
+        Gate::authorize('roles.create');
+
         return view('roles.create', $this->formData());
     }
 
     /** 保存角色并分配权限 */
     public function store(StoreRoleRequest $request): RedirectResponse
     {
+        Gate::authorize('roles.create');
         $role = Role::query()->create([
             'name' => $request->validated('name'),
             'description' => $request->validated('description'),
@@ -65,6 +69,8 @@ class RoleController extends Controller
     /** 编辑角色表单（带权限树复选框） */
     public function edit(Role $role): View
     {
+        Gate::authorize('roles.update');
+
         return view('roles.edit', array_merge($this->formData(), [
             'role' => $role,
             'rolePermissionIds' => $role->permissions()->pluck('id')->all(),
@@ -74,6 +80,7 @@ class RoleController extends Controller
     /** 更新角色与权限分配 */
     public function update(UpdateRoleRequest $request, Role $role): RedirectResponse
     {
+        Gate::authorize('roles.update');
         // admin 角色标识不允许修改，防止绕过超级管理员判定
         if ($role->name === User::ROLE_ADMIN && $request->validated('name') !== User::ROLE_ADMIN) {
             return redirect()
@@ -95,6 +102,7 @@ class RoleController extends Controller
     /** 删除角色（内置 admin 角色与已分配用户的角色不允许删除） */
     public function destroy(Role $role): RedirectResponse
     {
+        Gate::authorize('roles.destroy');
         if ($role->name === User::ROLE_ADMIN) {
             return redirect()
                 ->route('roles.index')

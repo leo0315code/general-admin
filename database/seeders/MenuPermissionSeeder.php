@@ -144,6 +144,11 @@ class MenuPermissionSeeder extends Seeder
                         'route' => 'dict-types.index',
                         'sort' => 40,
                         'remark' => '管理数据字典类型与字典项',
+                        'children' => [
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '新增字典', 'permission_name' => 'dict.create', 'sort' => 10],
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '编辑字典', 'permission_name' => 'dict.update', 'sort' => 20],
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '删除字典', 'permission_name' => 'dict.destroy', 'sort' => 30],
+                        ],
                     ],
                     [
                         'type' => Menu::TYPE_MENU,
@@ -162,6 +167,9 @@ class MenuPermissionSeeder extends Seeder
                         'route' => 'settings.index',
                         'sort' => 60,
                         'remark' => '站点名称、列表分页、版权信息等系统配置',
+                        'children' => [
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '修改设置', 'permission_name' => 'settings.update', 'sort' => 10],
+                        ],
                     ],
                 ],
             ],

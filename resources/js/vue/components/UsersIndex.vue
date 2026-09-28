@@ -14,7 +14,8 @@ const props = defineProps({
     query: { type: Object, default: () => ({}) },
     userBase: { type: String, default: '' }, // 后台用户资源基址，如 /console/users
     canManage: { type: Boolean, default: false },
-    canDestroy: { type: Boolean, default: false },
+    canUpdate: { type: Boolean, default: false }, // users.update：编辑 / 启停
+    canDestroy: { type: Boolean, default: false }, // users.destroy：删除
     routes: { type: Object, default: () => ({}) },
 });
 
@@ -178,11 +179,11 @@ function destroyUser(u) {
                 </span>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" class="btn-danger-ghost" @click="bulkDelete">
+                    <button v-if="canDestroy" type="button" class="btn-danger-ghost" @click="bulkDelete">
                         <Icon name="heroicon-o-trash" class="h-4 w-4" />
                         批量删除
                     </button>
-                    <button type="button" class="btn-ghost" @click="bulkToggle">
+                    <button v-if="canUpdate" type="button" class="btn-ghost" @click="bulkToggle">
                         <Icon name="heroicon-o-arrow-path" class="h-4 w-4" />
                         批量启停
                     </button>
@@ -291,6 +292,7 @@ function destroyUser(u) {
                         <td class="td text-right whitespace-nowrap">
                             <div class="inline-flex items-center gap-0.5">
                                 <a
+                                    v-if="canUpdate"
                                     :href="`${userBase}/${u.id}/edit`"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
                                     title="编辑"
@@ -299,7 +301,7 @@ function destroyUser(u) {
                                 </a>
 
                                 <button
-                                    v-if="!u.is_self"
+                                    v-if="canUpdate && !u.is_self"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                                     :title="u.status ? '停用（无法登录）' : '启用'"

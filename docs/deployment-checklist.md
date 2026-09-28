@@ -39,6 +39,7 @@ php artisan config:cache             # 或 config:route:view 三件套
 
 - [ ] 确认 `.env` 中数据库账号仅授权本项目库（最小权限，禁用 root）
 - [ ] 首个管理员创建后立即改默认密码（`EnsurePasswordChanged` 会强制）
+- [ ] **升级后重新同步权限种子**：菜单树是权限的唯一来源（「菜单即权限」），新增按钮级权限节点后需执行 `php artisan db:seed --class=MenuPermissionSeeder`（幂等，可重复执行），再 `php artisan permission:cache-reset`。否则新权限在权限表中不存在，非 admin 角色会把对应操作全部 403
 
 ## 4. 缓存与限流（依赖 CACHE_STORE）
 

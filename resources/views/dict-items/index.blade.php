@@ -6,10 +6,12 @@
                     <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
                     返回类型
                 </a>
-                <a href="{{ route('dict-items.create', ['dict_type_id' => $dictType->id]) }}" class="btn-primary">
-                    <x-icon name="heroicon-o-plus" class="h-4 w-4" />
-                    新建字典项
-                </a>
+                @can('dict.create')
+                    <a href="{{ route('dict-items.create', ['dict_type_id' => $dictType->id]) }}" class="btn-primary">
+                        <x-icon name="heroicon-o-plus" class="h-4 w-4" />
+                        新建字典项
+                    </a>
+                @endcan
             </x-slot>
         </x-page-header>
     </x-slot>
@@ -32,6 +34,11 @@
             'currentUrl' => url()->current(),
             'query' => request()->query(),
             'itemsBase' => rtrim(route('dict-items.index'), '/'),
+            // 按钮级权限：与服务端 Gate::authorize 保持一致
+            'can' => [
+                'update' => auth()->user()?->can('dict.update') ?? false,
+                'destroy' => auth()->user()?->can('dict.destroy') ?? false,
+            ],
         ];
     @endphp
 

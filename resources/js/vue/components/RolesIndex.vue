@@ -11,6 +11,8 @@ const props = defineProps({
     currentUrl: { type: String, default: '' },
     query: { type: Object, default: () => ({}) },
     roleBase: { type: String, default: '' }, // 后台角色资源基址，如 /console/roles
+    // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
+    can: { type: Object, default: () => ({}) },
 });
 
 const columns = [
@@ -115,6 +117,7 @@ function destroyRole(role) {
                         <td class="td text-right whitespace-nowrap">
                             <div class="inline-flex items-center gap-0.5">
                                 <a
+                                    v-if="can.update"
                                     :href="`${roleBase}/${role.id}/edit`"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
                                     title="编辑"
@@ -123,7 +126,7 @@ function destroyRole(role) {
                                 </a>
 
                                 <button
-                                    v-if="!role.is_admin"
+                                    v-if="can.destroy && !role.is_admin"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition"
                                     title="删除"

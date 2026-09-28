@@ -7,6 +7,7 @@ use App\Support\Dict;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -36,11 +37,14 @@ class DictTypeController extends Controller
 
     public function create(): View
     {
+        Gate::authorize('dict.create');
+
         return view('dict-types.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
+        Gate::authorize('dict.create');
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'type' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/', 'unique:dict_types,type'],
@@ -69,11 +73,14 @@ class DictTypeController extends Controller
 
     public function edit(DictType $dictType): View
     {
+        Gate::authorize('dict.update');
+
         return view('dict-types.edit', compact('dictType'));
     }
 
     public function update(Request $request, DictType $dictType): RedirectResponse
     {
+        Gate::authorize('dict.update');
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'type' => [
@@ -104,6 +111,7 @@ class DictTypeController extends Controller
 
     public function destroy(DictType $dictType): RedirectResponse
     {
+        Gate::authorize('dict.destroy');
         // 删除类型会级联删除其字典项
         $name = $dictType->name;
         $dictType->delete();

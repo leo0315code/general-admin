@@ -11,6 +11,8 @@ const props = defineProps({
     query: { type: Object, default: () => ({}) },
     typesBase: { type: String, default: '' }, // /console/dict-types
     itemsBase: { type: String, default: '' }, // /console/dict-items
+    // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
+    can: { type: Object, default: () => ({}) },
 });
 
 const columns = [
@@ -126,6 +128,7 @@ function destroyType(dt) {
                                     <Icon name="heroicon-o-list-bullet" class="h-4 w-4" />
                                 </a>
                                 <a
+                                    v-if="can.update"
                                     :href="`${typesBase}/${dt.id}/edit`"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
                                     title="编辑"
@@ -133,6 +136,7 @@ function destroyType(dt) {
                                     <Icon name="heroicon-o-pencil-square" class="h-4 w-4" />
                                 </a>
                                 <button
+                                    v-if="can.destroy"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition"
                                     title="删除"

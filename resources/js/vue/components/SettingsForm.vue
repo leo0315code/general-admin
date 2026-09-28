@@ -12,6 +12,8 @@ const props = defineProps({
     fields: { type: Array, default: () => [] },
     errors: { type: Object, default: () => ({}) },
     indexUrl: { type: String, default: '' },
+    // 服务端按钮级权限 settings.update：无权限时只读展示，不显示保存按钮
+    canUpdate: { type: Boolean, default: true },
 });
 
 const values = reactive({});
@@ -61,10 +63,12 @@ function fieldError(key) {
             <p v-for="e in fieldError(field.key)" :key="e" class="mt-1.5 text-xs text-danger-600 dark:text-danger-400">{{ e }}</p>
         </div>
 
-        <p class="text-xs text-gray-500 dark:text-gray-400">保存后立即生效（站点名称用于后台品牌展示与页面标题）。</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+            {{ canUpdate ? '保存后立即生效（站点名称用于后台品牌展示与页面标题）。' : '你只有查看权限，无法修改系统设置（需要 settings.update 权限）。' }}
+        </p>
 
         <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-            <button type="submit" class="btn-primary" data-submit-button>
+            <button v-if="canUpdate" type="submit" class="btn-primary" data-submit-button>
                 <svg data-loading-spinner class="hidden animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>

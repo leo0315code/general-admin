@@ -200,7 +200,7 @@ class UserController extends Controller
     /** 切换账号启停状态（禁止停用自己；最后一个启用 admin 不可停用） */
     public function toggleStatus(User $user): RedirectResponse
     {
-        Gate::authorize('user.manage');
+        Gate::authorize('users.update');
 
         if ($user->is(auth()->user())) {
             return back()->with('error', '不能停用当前登录的账号。');
@@ -246,7 +246,7 @@ class UserController extends Controller
     /** 批量删除用户（软删除；跳过自己与最后一个启用的 admin；整体事务） */
     public function bulkDestroy(Request $request): RedirectResponse
     {
-        Gate::authorize('user.manage');
+        Gate::authorize('users.destroy');
 
         $deleted = 0;
         $skipped = 0;
@@ -282,7 +282,7 @@ class UserController extends Controller
     /** 批量切换账号启停状态（跳过自己与最后一个启用的 admin；整体事务） */
     public function bulkToggleStatus(Request $request): RedirectResponse
     {
-        Gate::authorize('user.manage');
+        Gate::authorize('users.update');
 
         $changed = 0;
         $skipped = 0;
@@ -375,7 +375,7 @@ class UserController extends Controller
     /** 还原软删除用户 */
     public function restore(int $id): RedirectResponse
     {
-        Gate::authorize('user.manage');
+        Gate::authorize('users.update');
 
         $user = User::query()->onlyTrashed()->findOrFail($id);
         $user->restore();
@@ -387,7 +387,7 @@ class UserController extends Controller
     /** 彻底删除用户（不可恢复） */
     public function forceDestroy(int $id): RedirectResponse
     {
-        Gate::authorize('user.manage');
+        Gate::authorize('users.destroy');
 
         $user = User::query()->onlyTrashed()->findOrFail($id);
         $name = $user->name;

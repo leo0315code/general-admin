@@ -2,10 +2,12 @@
     <x-slot name="header">
         <x-page-header title="数据字典" description="管理字典类型与字典项，统一业务状态值">
             <x-slot name="actions">
-                <a href="{{ route('dict-types.create') }}" class="btn-primary">
-                    <x-icon name="heroicon-o-plus" class="h-4 w-4" />
-                    新建类型
-                </a>
+                @can('dict.create')
+                    <a href="{{ route('dict-types.create') }}" class="btn-primary">
+                        <x-icon name="heroicon-o-plus" class="h-4 w-4" />
+                        新建类型
+                    </a>
+                @endcan
             </x-slot>
         </x-page-header>
     </x-slot>
@@ -29,6 +31,11 @@
             'query' => request()->query(),
             'typesBase' => rtrim(route('dict-types.index'), '/'),
             'itemsBase' => rtrim(route('dict-items.index'), '/'),
+            // 按钮级权限：与服务端 Gate::authorize 保持一致，无权限时隐藏操作按钮
+            'can' => [
+                'update' => auth()->user()?->can('dict.update') ?? false,
+                'destroy' => auth()->user()?->can('dict.destroy') ?? false,
+            ],
         ];
     @endphp
 

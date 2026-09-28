@@ -6,6 +6,7 @@ use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -38,6 +39,7 @@ class SettingController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        Gate::authorize('settings.update');
         $validated = $request->validate([
             'site_name' => ['required', 'string', 'max:100'],
             'pagination' => ['required', 'integer', 'between:5,100'],

@@ -8,6 +8,7 @@ use App\Support\Dict;
 use App\Support\ListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 /**
@@ -39,6 +40,7 @@ class DictItemController extends Controller
 
     public function create(Request $request): View
     {
+        Gate::authorize('dict.create');
         $dictType = DictType::query()->findOrFail($request->integer('dict_type_id'));
 
         return view('dict-items.create', compact('dictType'));
@@ -46,6 +48,7 @@ class DictItemController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Gate::authorize('dict.create');
         $dictType = DictType::query()->findOrFail($request->integer('dict_type_id'));
 
         $validated = $request->validate([
@@ -78,11 +81,14 @@ class DictItemController extends Controller
 
     public function edit(DictItem $dictItem): View
     {
+        Gate::authorize('dict.update');
+
         return view('dict-items.edit', compact('dictItem'));
     }
 
     public function update(Request $request, DictItem $dictItem): RedirectResponse
     {
+        Gate::authorize('dict.update');
         $validated = $request->validate([
             'label' => ['required', 'string', 'max:100'],
             'value' => [
@@ -114,6 +120,7 @@ class DictItemController extends Controller
 
     public function destroy(DictItem $dictItem): RedirectResponse
     {
+        Gate::authorize('dict.destroy');
         $dictTypeId = $dictItem->dict_type_id;
         $label = $dictItem->label;
         $dictItem->delete();
