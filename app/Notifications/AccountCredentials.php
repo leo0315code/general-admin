@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -13,15 +15,18 @@ use Illuminate\Notifications\Notification;
  * - reset  ：管理员重置密码 → 告知新密码（并强制下次登录改密）
  *
  * 设计取舍：
- * - **同步发送**（未 implements ShouldQueue）：部署侧无需常驻 queue worker；
- *   如日后接入队列，改为 implements ShouldQueue 即可，调用方无需改动。
- *   当前 MAIL_MAILER=log 时仅写日志，配置 SMTP 后自动真实发信。
+ * - **异步发送**（implements ShouldQueue）：SMTP 发信较慢，不阻塞后台操作主流程；
+ *   依赖常驻 queue worker（见 docs/queue.md），未配置 worker 时邮件滞留队列。
+ *   测试环境 QUEUE_CONNECTION=sync（phpunit.xml），notify 仍同步发送，行为不变。
  * - 密码明文进邮件是本场景的必要代价（否则用户无法登录），因此
  *   两个场景都要求/提示「首次登录后立即修改密码」。
- * - 发送失败由调用方 catch 兜底，不影响后台操作主流程。
+ * - 发送失败由调用方 catch 兜底，不影响后台操作主流程；
+ *   入队后失败由 queue worker 重试（retry_after，默认 90 秒）。
  */
-class AccountCredentials extends Notification
+class AccountCredentials extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     public function __construct(
         private readonly string $plainPassword,
         private readonly string $scene = 'created',

@@ -20,7 +20,7 @@ class OperationLog extends Model
 
     public const UPDATED_AT = null;
 
-    /** 日志保留天数（超期由 model:prune 清理） */
+    /** 日志保留天数（config 可覆盖，超期由 model:prune 清理） */
     public const RETENTION_DAYS = 90;
 
     /** @var list<string> 允许批量赋值的字段 */
@@ -38,7 +38,9 @@ class OperationLog extends Model
     /** 可清理的模型查询（model:prune 会批量删除） */
     public function prunable(): Builder
     {
-        return static::where('created_at', '<', now()->subDays(self::RETENTION_DAYS));
+        $days = (int) config('app.operation_log_retention_days', self::RETENTION_DAYS);
+
+        return static::where('created_at', '<', now()->subDays($days));
     }
 
     /** 操作日志对应的用户（软删除用户仍可关联） */

@@ -1,6 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="操作日志" description="登录审计与后台操作审计" />
+        <x-page-header title="操作日志" description="登录审计与后台操作审计">
+            <x-slot name="actions">
+                @can('log.export')
+                    <a
+                        href="{{ route('logs.export', array_filter(request()->only(['search', 'action', 'date']))) }}"
+                        class="btn-secondary"
+                    >
+                        <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
+                        <span>导出</span>
+                    </a>
+                @endcan
+            </x-slot>
+        </x-page-header>
     </x-slot>
 
     <x-flash-messages />
@@ -25,6 +37,7 @@
             'sortDir' => $dir ?? 'desc',
             'currentUrl' => url()->current(),
             'query' => request()->query(),
+            'detailUrl' => route('logs.show', ['log' => '__ID__']),
         ];
     @endphp
 

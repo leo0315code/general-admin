@@ -14,7 +14,14 @@ const props = defineProps({
     sortDir: { type: String, default: 'desc' },
     currentUrl: { type: String, default: '' },
     query: { type: Object, default: () => ({}) },
+    /** 详情页链接模板（用 __ID__ 占位，实际 id 前端替换） */
+    detailUrl: { type: String, default: '' },
 });
+
+/** 行详情链接 */
+function detailHref(log) {
+    return props.detailUrl ? props.detailUrl.replace('__ID__', String(log.id)) : '#';
+}
 
 const search = ref(props.keyword || '');
 const filterAction = ref(props.action || '');
@@ -60,27 +67,38 @@ const columns = [
     { key: 'action', label: '操作类型', sortable: true },
     { key: null, label: '描述' },
     { key: 'ip', label: 'IP 地址', sortable: true },
+    { key: null, label: '操作', align: 'right' },
 ];
 
-function actionBadge(action) {
-    if (action === '登录' || action === '登录成功') {
-        return 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300 heroicon-o-check-circle';
-    }
-    if (String(action).includes('失败')) {
-        return 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300 heroicon-o-x-circle';
-    }
-    if (action === '删除') {
-        return 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300 heroicon-o-trash';
-    }
-    if (action === '创建') {
-        return 'bg-info-100 text-info-700 dark:bg-info-500/20 dark:text-info-300 heroicon-o-plus-circle';
-    }
-    return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
-}
+// 操作类型 → 徽章配色 + 图标（图标名必须已登记在 Icon.vue 的 paths 白名单里）
+const ACTION_STYLES = {
+    创建: { color: 'bg-info-100 text-info-700 dark:bg-info-500/20 dark:text-info-300', icon: 'heroicon-o-plus-circle' },
+    修改: { color: 'bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300', icon: 'heroicon-o-pencil-square' },
+    删除: { color: 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300', icon: 'heroicon-o-trash' },
+    导入: { color: 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300', icon: 'heroicon-o-arrow-up-tray' },
+    导出: { color: 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300', icon: 'heroicon-o-arrow-down-tray' },
+    登录: { color: 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300', icon: 'heroicon-o-arrow-right-on-rectangle' },
+    退出: { color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', icon: 'heroicon-o-arrow-left-on-rectangle' },
+    还原: { color: 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300', icon: 'heroicon-o-arrow-uturn-left' },
+};
 
-function actionIcon(action) {
-    const m = actionBadge(action).match(/heroicon-o-[a-z-]+$/);
-    return m ? m[0] : null;
+const FALLBACK_STYLE = {
+    color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+    icon: 'heroicon-o-clipboard-document-list',
+};
+
+function actionStyle(action) {
+    const name = String(action);
+
+    // 失败类优先按危险色处理（登录失败 / 导入失败 …）
+    if (name.includes('失败')) {
+        return {
+            color: 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300',
+            icon: 'heroicon-o-x-circle',
+        };
+    }
+
+    return ACTION_STYLES[name] ?? FALLBACK_STYLE;
 }
 
 function initial(name) {
@@ -157,19 +175,24 @@ function initial(name) {
                         </td>
                         <td class="td">
                             <span
-                                :class="actionBadge(log.action).split(' ').slice(0, -1).join(' ')"
+                                :class="actionStyle(log.action).color"
                                 class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs"
                             >
-                                <Icon v-if="actionIcon(log.action)" :name="actionIcon(log.action)" class="h-3.5 w-3.5" />
+                                <Icon :name="actionStyle(log.action).icon" class="h-3.5 w-3.5" />
                                 {{ log.action }}
                             </span>
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ log.description || '—' }}</td>
                         <td class="td text-gray-500 dark:text-gray-400 font-mono text-xs">{{ log.ip || '—' }}</td>
+                        <td class="td text-right whitespace-nowrap">
+                            <a :href="detailHref(log)" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                                详情
+                            </a>
+                        </td>
                     </tr>
 
                     <tr v-if="logs.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center">
+                        <td colspan="7" class="px-6 py-12 text-center">
                             <Icon name="heroicon-o-clipboard-document-list" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
                             <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">暂无操作日志</p>
                         </td>
