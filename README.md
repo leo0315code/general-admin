@@ -251,6 +251,7 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 | 队列 | `php artisan queue:work`；`QUEUE_CONNECTION=database`，失败任务落 `failed_jobs` | `docs/queue.md` |
 | WebSocket | `php artisan ws start\|stop\|restart\|status`（默认 `status`） | `docs/websocket.md` |
 | 定时任务 | `* * * * * php artisan schedule:run`（备份 02:00、备份清理 02:30、备份监控 09:00、模型清理 03:00、附件清理 03:20） | `docs/deployment-checklist.md` |
+| 上线自检 | `php artisan deploy:check`（`--strict` 建议级也算失败，`--json` 供流水线解析） | `docs/deployment-checklist.md` |
 
 - **备份只存数据库**（代码在 git，不打包站点目录）；产物落在 `storage/app/private/backups`，已被 gitignore 且不提供 URL
 - 配置 `OSS_ACCESS_KEY / OSS_SECRET_KEY / OSS_ENDPOINT / OSS_BUCKET` 四项即自动开启**本地 + OSS 异地双写**，缺任一项安静降级为纯本地

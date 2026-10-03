@@ -11,6 +11,20 @@ php artisan key:generate --force
 
 > 模板文件 `.env.production.example` 已在仓库中（`.env.production` 本身被 gitignore，防止真实密钥入库）。
 
+### 0.1 先跑一遍自动自检
+
+```bash
+php artisan deploy:check              # 输出「阻断 / 建议 / 通过」三态表
+php artisan deploy:check --strict     # 建议级也算失败（CI 用）
+php artisan deploy:check --json       # JSON 输出，便于流水线解析
+```
+
+覆盖：环境配置（`APP_ENV/APP_DEBUG/APP_KEY/SESSION_ENCRYPT/SESSION_SECURE_COOKIE`、`.env` 残留占位符、前端产物、配置缓存）、**运行时七项（复用 `HealthCheck`，与 `/health/detailed` 完全同源）**、运维项（mysqldump、异地备份、失败任务、CORS 通配）。
+**存在阻断项时退出码非 0**，可直接作为上线卡点。
+
+> 「仅在生产才要求」的项（如 `APP_DEBUG=false`）在非生产环境会自动降级为建议——避免本地开发跑一次满屏 FAIL 反而没人看。
+> 清单里**人工核对项**（HTTPS、nginx root、OSS 私有、恢复演练、监控接入）仍需人工确认。
+
 ## 1. 必改项（P0，阻断级）
 
 | 项 | 本地值（错误示范） | 生产要求 |
