@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\DumpBinary;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
@@ -53,6 +54,12 @@ class AppServiceProvider extends ServiceProvider
 
         // 加载系统设置进运行时 config（migrate 等无表场景自动跳过）
         $this->loadSettings();
+
+        // 定位 mysqldump（备份用）：只在命令行环境探测，Web 请求无此需求，
+        // 省掉每次请求的文件扫描开销。路径随环境自动识别，换机器无需改代码。
+        if ($this->app->runningInConsole()) {
+            DumpBinary::inject();
+        }
     }
 
     /**

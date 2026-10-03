@@ -25,6 +25,17 @@ Artisan::command('inspire', function () {
 
 Schedule::command('model:prune')->dailyAt('03:00');
 
+// 数据库备份（spatie/laravel-backup）：产物落在 backups 磁盘，已被 gitignore
+// 只备份数据库——代码在 git 里，打包站点目录既占空间、恢复时又容易压掉新代码
+Schedule::command('backup:run')->dailyAt('02:00')->withoutOverlapping();
+
+// 旧备份清理：按 config/backup.php 的 cleanup 保留策略执行（7 天全留 → 日/周/月/年递减）
+Schedule::command('backup:clean')->dailyAt('02:30')->withoutOverlapping();
+
+// 备份健康检查：最新备份超过 BACKUP_MAX_AGE_DAYS 天或占用超阈值时，
+// 按 config/backup.php 的 notifications 配置发邮件告警（成功事件刻意不告警，避免每天一封）
+Schedule::command('backup:monitor')->dailyAt('09:00')->withoutOverlapping();
+
 // 附件清理：过期附件 + 磁盘孤儿文件（保留天数见 config uploads.prune_days）
 Schedule::command('attachments:prune')->dailyAt('03:20')->withoutOverlapping();
 

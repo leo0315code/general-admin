@@ -59,3 +59,15 @@ php artisan config:cache             # 或 config:route:view 三件套
 - [ ] 日志轮转已内置（P1 审计时落地的清理任务），确认 `schedule:run` 已进 crontab：
   `* * * * * cd /项目路径 && php artisan schedule:run >> /dev/null 2>&1`
 - [ ] 依赖安全更新：`composer audit` / `npm audit --omit=dev` 定期跑（CI 已含）
+
+## 7. 数据库备份（上线必做）
+
+> 方案与恢复步骤见 `docs/backup.md`；组件为 `spatie/laravel-backup`，每日 02:00 由调度自动执行。
+
+- [ ] **已加异地目标**：把对象存储磁盘补进 `backup.destination.disks`——只存本机磁盘等于没备份，磁盘故障会一起丢
+- [ ] 首次部署后手工跑一次验证：`php artisan backup:run` 见到 `Backup completed!`，再 `php artisan backup:list` 确认 Healthy
+- [ ] **已做过一次恢复演练**（见 `docs/backup.md` 第六节）：把备份恢复到临时库核对条数。**没演练过的备份不算数**
+- [ ] `BACKUP_NOTIFY_EMAIL` 已配置为运维邮箱；确认失败类告警能收到
+- [ ] 确认服务器装有 `mysqldump`（或已在 `.env` 显式指定 `DB_DUMP_BINARY_PATH`）；缺省时会自动探测，失败则告警而非静默产出空备份
+- [ ] cron 已生效：`php artisan schedule:list` 能看到 backup:run / backup:clean / backup:monitor 三条
+- [ ] ⚠️ 目标服务器为 Windows 时此方案不适用（spatie 官方不支持 Windows），需改用其他备份手段

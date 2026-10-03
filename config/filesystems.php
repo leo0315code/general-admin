@@ -30,6 +30,14 @@ return [
 
     'disks' => [
 
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/backups'),
+            // 刻意不给 url / serve：备份归档不允许通过 HTTP 直连下载
+            'serve' => false,
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
