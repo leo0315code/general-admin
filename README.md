@@ -11,7 +11,10 @@
 - **MySQL**（主数据库）；测试使用 sqlite in-memory（可离线运行）
 - **spatie/laravel-permission**：角色权限（roles / permissions / model_has_roles / model_has_permissions / role_has_permissions）
 - **blade-ui-kit/blade-icons + blade-heroicons**：图标（`<x-icon name="heroicon-o-..." />`）
-- **maatwebsite/excel**：Excel 导入导出（用户/文章）
+- **maatwebsite/excel**：Excel 导入导出（用户/文章/日志）
+- **spatie/laravel-backup**：数据库备份（本地 + 阿里云 OSS 异地双写，见 `docs/backup.md`）
+- **iidestiny/flysystem-oss**：阿里云 OSS 磁盘驱动（异地备份用）
+- **workerman/gateway-worker**：WebSocket 实时推送（`php artisan ws:start`，见 `docs/websocket.md`）
 - 未引入 Filament / Nova 等重型后台框架，业务模块可直接复制 Post 模板
 
 ### 前端架构（Vue3 渐进式）
@@ -29,11 +32,16 @@
 - 角色管理：CRUD + **按菜单树分配权限**（目录 → 菜单 → 按钮）
 - **菜单管理（菜单即权限）**：目录 / 菜单 / 按钮三级节点树 CRUD、启停、排序
 - 文章管理：示例 CRUD 模板（分页/搜索/状态切换/软删除/**回收站**）+ **Excel 导出（跟随筛选）** + **数据范围授权（PostPolicy：admin 或作者本人可改/删）**
-- **操作日志**：登录审计（成功/失败/登出）+ 后台写操作自动审计（谁/何时/做了什么/IP），**GET 导出也留痕**、业务异常也记录「执行失败」
+- **操作日志**：登录审计（成功/失败/登出）+ 后台写操作自动审计（谁/何时/做了什么/IP），**GET 导出也留痕**、业务异常也记录「执行失败」；支持详情页、导出、**保留天数可配置**（默认 90 天，自动清理）
 - **系统设置**：站点名称 / 每页条数 / 版权信息（保存即全局生效，走缓存）
-- **数据字典**：字典类型 + 字典项管理（名称/值/排序/状态/备注），业务侧用 `dict()` 读取（含缓存与自动失效）
+- **数据字典**：字典类型 + 字典项管理（名称/值/排序/状态/备注），**字典类型页可同页维护字典项**、新建类型时批量添加；业务侧用 `dict()` 读取（含缓存与自动失效）
+- **附件管理**：多文件队列上传 + 进度条、**扩展名 + MIME 双重白名单**（不含 svg/html/php）、单文件与用户配额限制；存私有磁盘、必须走带鉴权的下载路由；`attachments:prune` 按保留天数清理；文章封面等业务字段直接复用附件基座
+- **站内通知中心**：三档群发（全员 / 按角色 / 指定用户）、已读未读、站内信列表；**WebSocket 实时推送**（顶栏铃铛未读数免刷新更新）
+- **数据库备份**：每日自动备份 + Gzip 压缩 + 保留策略（7 天内全留，之后按日/周/月/年递减）+ 过期清理 + 健康监控；配置 4 项 OSS 凭证即自动**本地 + 异地双写**（缺任一项安静降级为纯本地）
+- **健康检查端点**：`/health` 免登录探活（不连数据库）、`/health/detailed` 七项自检（数据库/迁移/缓存/备份新鲜度/目录可写/磁盘剩余/队列积压），仅供内网或持 token 访问
+- **队列**：账号凭据邮件等耗时任务入队（`QUEUE_CONNECTION=database`），失败任务落 `failed_jobs`
 - **中文错误页**：403 / 404 / 419 / 429 / 500 全中文 + 暗色模式适配
-- RBAC 权限：菜单级 8 项 + 按钮级 15 项，全部由菜单树维护（见下）
+- RBAC 权限：菜单级 10 项 + 按钮级 25 项（共 **35 项**），全部由菜单树维护（见下）
 
 ## 菜单即权限（参考 BuildAdmin）
 
@@ -51,14 +59,15 @@
 - 授权入口唯一：**角色管理 → 权限分配**（按菜单树勾选，支持「全选本组」）
 - 侧边栏由 `App\Support\Navigation` 依据 `menus` 表 + 用户权限动态生成，与页面可达性严格同源
 
-### 权限清单（23 项）
+### 权限清单（35 项）
 
 | 层级 | 权限标识 |
 | --- | --- |
-| 菜单级 | `dashboard.view`、`post.manage`、`user.manage`、`role.manage`、`menu.manage`、`dict.manage`、`log.manage`、`settings.manage` |
-| 按钮级 | `posts.create/update/destroy`、`users.create/update/destroy/reset-password/import/export`、`roles.create/update/destroy`、`menus.create/update/destroy` |
+| 菜单级（10） | `dashboard.view`、`post.manage`、`user.manage`、`role.manage`、`menu.manage`、`dict.manage`、`log.manage`、`settings.manage`、`attachments.manage`、`messages.manage` |
+| 按钮级（25） | `posts.create/update/destroy/export`、`users.create/update/destroy/reset-password/import/export`、`roles.create/update/destroy`、`menus.create/update/destroy`、`dict.create/update/destroy`、`log.export`、`settings.update`、`attachments.upload/destroy`、`messages.create/revoke` |
 
 > 内置角色：`admin` 全部权限（`Gate::before` 短路放行）；`editor` = `dashboard.view` + `post.manage` + `posts.create/update/destroy`。
+> 权限的唯一来源是菜单树：新增模块只需在「菜单管理」建节点并填 `permission_name`，权限即自动入库，无需改代码（见下）。
 
 ## 快速开始
 
@@ -83,6 +92,11 @@ php artisan migrate:fresh --seed
 php artisan serve
 # 访问 http://localhost:8000（公开欢迎页）
 # 后台入口：http://localhost:8000/console/login
+
+# 6. 可选：常驻服务（生产必开，开发环境按需）
+php artisan queue:work            # 队列消费（邮件/通知等异步任务）
+php artisan ws start              # WebSocket 推送（顶栏通知实时未读数）
+* * * * * php artisan schedule:run # 定时任务：备份、日志清理、附件清理
 ```
 
 ## 种子数据（`migrate:fresh --seed` 自动填充）
@@ -91,7 +105,7 @@ php artisan serve
 
 | 顺序 | Seeder | 填充内容 | 数据量 |
 | --- | --- | --- | --- |
-| 1 | `MenuPermissionSeeder` | 菜单树 + 同步 spatie 权限（**权限的唯一来源**） | 26 节点 / 23 权限 |
+| 1 | `MenuPermissionSeeder` | 菜单树 + 同步 spatie 权限（**权限的唯一来源**） | 38 节点 / 35 权限 |
 | 2 | `RolePermissionSeeder` | `admin`、`editor` 两个内置角色及授权 | 2 角色 |
 | 3 | `UserSeeder` | admin / editor + 12 个测试用户并分配角色 | 14 用户 |
 | 4 | `PostSeeder` | 20 篇示例文章（13 已发布 / 7 草稿，5 位作者） | 20 文章 |
@@ -119,7 +133,7 @@ php artisan serve
 
 | 账号 | 密码 | 登录方式 | 角色 | 权限 |
 | --- | --- | --- | --- | --- |
-| leo0315 / admin@example.com | password | 用户名或邮箱 | 超级管理员（admin） | 全部 23 项权限 |
+| leo0315 / admin@example.com | password | 用户名或邮箱 | 超级管理员（admin） | 全部 35 项权限 |
 | 编辑 / editor@example.com | password | 用户名或邮箱 | 编辑（editor） | dashboard.view、post.manage、posts.create/update/destroy |
 | 测试用户1 ~ 测试用户12 | password | 用户名 | user1=admin，其余 editor（固定规则） | 同上 |
 
@@ -173,19 +187,28 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 | resource {prefix}/roles（不含 show） | RoleController | permission:role.manage |
 | resource {prefix}/menus（不含 show）+ PATCH {prefix}/menus/{menu}/toggle-status | MenuController | permission:menu.manage |
 | resource {prefix}/posts（不含 show）+ PATCH {prefix}/posts/{post}/toggle-status + **回收站（trash/restore/force-delete）** | PostController | permission:post.manage |
-| GET /{prefix}/logs | OperationLogController | permission:log.manage |
+| GET /{prefix}/logs + GET logs/{log} + GET logs/export | OperationLogController | permission:log.manage（导出需 `log.export`） |
 | GET\|PUT /{prefix}/settings | SettingController | permission:settings.manage |
 | resource {prefix}/dict-types、{prefix}/dict-items（不含 show） | DictTypeController / DictItemController | permission:dict.manage |
+| GET/POST {prefix}/attachments + download + DELETE | AttachmentController | permission:attachments.manage（上传/删除另校验） |
+| GET {prefix}/notifications（+ unread-count / read / read-all / 删除） | NotificationController | auth（个人收件箱） |
+| GET/POST {prefix}/messages + DELETE messages/{id}/revoke | MessageBroadcastController | permission:messages.manage（发送/撤回另校验） |
+| POST {prefix}/ws/ticket | WsTicketController | auth（换取 WS 一次性票据，60 秒有效、消费即失效） |
+| GET /health、`/health/detailed` | `routes/health.php` | 免登录 / 内网或 token（不走后台前缀、无 session） |
 | /{prefix}/login 等 | Breeze 默认 | guest |
 | /{prefix}/profile、/{prefix}/logout 等 | Breeze 默认 | auth |
 
 ## 数据库表结构
 
-- `users`：id、name、email（唯一）、email_verified_at、**status（1启用/0停用）、last_login_at、last_login_ip、must_change_password（首登强制改密）**、password、remember_token、deleted_at（软删除）、timestamps
-- `roles`：id、name（唯一，角色标识）、description、guard_name、timestamps
-- `permissions`：id、name（唯一，权限标识）、label（中文名）、description、guard_name、timestamps
-- `model_has_roles` / `model_has_permissions` / `role_has_permissions`：Spatie 关联表
-- `posts`：id、user_id、title、content、status（draft/published）、published_at、deleted_at（软删除）、timestamps
+- `users`：id、name（唯一）、email（唯一、可空）、email_verified_at、**status（1启用/0停用）、last_login_at、last_login_ip、must_change_password（首登强制改密）**、password、remember_token、deleted_at（软删除）、timestamps
+- `roles` / `permissions` / `model_has_roles` / `model_has_permissions` / `role_has_permissions`：Spatie RBAC（`permissions.label` 存中文名）
+- `menus`：id、parent_id、type（dir/menu/button）、title、icon、path、`permission_name`、sort、status、timestamps —— **菜单即权限**
+- `posts`：id、user_id、title、content、status（draft/published）、published_at、**cover_attachment_id（封面，关联附件）**、deleted_at（软删除）、timestamps
+- `attachments`：id、user_id、original_name、path、disk、mime、size、timestamps —— 通用附件基座
+- `notifications` / `notification_broadcasts`：站内通知与群发批次（全员 / 按角色 / 指定用户）
+- `operation_logs`：操作审计（user_id、action、method、url、ip、payload、status）
+- `settings` / `dict_types` / `dict_items`：系统设置与数据字典
+- `jobs` / `failed_jobs`：队列任务与失败任务
 
 ## 暗色模式
 
@@ -206,16 +229,33 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 
 ## 文章模块 = 业务 CRUD 模板
 
-`Post`（文章）是示例 CRUD 模板：列表（分页+关键字搜索+状态筛选）、创建、编辑、删除（软删除）、状态切换、**回收站（还原/彻底删除）**、导出（跟随筛选）。
+`Post`（文章）是示例 CRUD 模板：列表（分页+关键字搜索+状态筛选）、创建、编辑（含**封面上传**）、删除（软删除）、状态切换、**回收站（还原/彻底删除）**、导出（跟随筛选）。
 复制以下文件即可生成新业务模块：
 
-- 迁移：`database/migrations/2026_09_12_000002_create_posts_table.php`
-- 模型：`app/Models/Post.php`（含搜索/状态作用域）
+- 迁移：`database/migrations/2026_09_12_000002_create_posts_table.php`（封面字段见 `2026_09_29_210000_add_cover_attachment_id_to_posts_table.php`）
+- 模型：`app/Models/Post.php`（含搜索/状态作用域、`cover` 关联）
 - 控制器：`app/Http/Controllers/PostController.php`
 - 请求校验：`app/Http/Requests/StorePostRequest.php`、`UpdatePostRequest.php`
-- 视图：`resources/views/posts/{index,create,edit}.blade.php`
+- 视图：`resources/views/posts/{index,create,edit,trash}.blade.php`
+
+> 搜索关键字统一走 `escape_like()` 转义 `%` `_` `\`，避免用户输入通配符把全表查出来。
 
 **新增模块后别忘了在「菜单管理」里加节点**：新建菜单节点（填权限标识，如 `report.view`）→ 权限自动入库 → 侧边栏与角色授权页立即生效，无需改代码。
+
+## 运维
+
+| 主题 | 常用命令 / 端点 | 文档 |
+| --- | --- | --- |
+| 数据库备份 | `php artisan backup:run`（手动）、`backup:list`、`backup:clean`、`backup:monitor` | `docs/backup.md` |
+| 健康检查 | `GET /health`（免登录探活）、`GET /health/detailed`（内网或 `?token=`，七项自检） | `docs/health-check.md` |
+| 队列 | `php artisan queue:work`；`QUEUE_CONNECTION=database`，失败任务落 `failed_jobs` | `docs/queue.md` |
+| WebSocket | `php artisan ws start\|stop\|restart\|status`（默认 `status`） | `docs/websocket.md` |
+| 定时任务 | `* * * * * php artisan schedule:run`（备份 02:00、备份清理 02:30、备份监控 09:00、模型清理 03:00、附件清理 03:20） | `docs/deployment-checklist.md` |
+
+- **备份只存数据库**（代码在 git，不打包站点目录）；产物落在 `storage/app/private/backups`，已被 gitignore 且不提供 URL
+- 配置 `OSS_ACCESS_KEY / OSS_SECRET_KEY / OSS_ENDPOINT / OSS_BUCKET` 四项即自动开启**本地 + OSS 异地双写**，缺任一项安静降级为纯本地
+- `mysqldump` 路径**运行时自动探测**（PATH → 常见安装目录），换机器无需改代码；确需指定才用 `DB_DUMP_BINARY_PATH`
+- **没演练过的备份等于没备份**：`docs/backup.md` 里有建临时库导入验证的标准流程
 
 ## 认证
 
@@ -234,8 +274,25 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 ```bash
 composer install
 npm install && npm run build   # 前端产物（public/build，已 gitignore）
-php artisan test
-# 198 passed (640 assertions)
+php artisan test               # 393 passed (1513 assertions)
+npx vitest run                 # 前端单测 31 passed
 ```
 
-覆盖：认证（Breeze 默认）、**账号生命周期（启停拦截登录、登录痕迹、首登强制改密全流程）**、仪表盘、用户管理、**用户导入（中文表头、重名/软删查重、角色与密码校验、失败行不中断、随机密码）**、角色管理、菜单管理（菜单即权限：权限自动同步 / 删除保护 / 改名清理）、文章管理、**数据字典读取 dict()（缓存与失效）**、**操作日志审计（GET 导出留痕）**、**回收站全链路（软删 → 回收站 → 还原 → 彻底删除）**、**中文错误页（403/404/419/429/500）**、**导出跟随筛选（FromQuery 流式）**、**安全收口（PostPolicy 数据范围、最后一个 admin 保护）**、**种子数据完整性（幂等、权限与菜单双向一致、后台页面可渲染）**、RBAC 权限控制（含 QA 冒烟：直接 POST 越权拦截、侧边栏与页面可达性同源、权限保存端到端生效）。
+覆盖：认证（Breeze 默认）、**账号生命周期（启停拦截登录、登录痕迹、首登强制改密全流程）**、仪表盘、用户管理、**用户导入（中文表头、重名/软删查重、角色与密码校验、失败行不中断、随机密码）**、角色管理、菜单管理（菜单即权限：权限自动同步 / 删除保护 / 改名清理）、文章管理（**封面接入附件** / **LIKE 通配符转义**）、**数据字典读取 dict()（缓存与失效）**、**附件上传与清理**、**通知中心与三档群发**、**WebSocket 推送与票据**、**操作日志审计（GET 导出留痕 / 保留天数 / 详情页）**、**回收站全链路（软删 → 回收站 → 还原 → 彻底删除）**、**中文错误页（403/404/419/429/500）**、**导出跟随筛选（FromQuery 流式）**、**安全收口（PostPolicy 数据范围、最后一个 admin 保护、按钮级权限服务端校验）**、**种子数据完整性（幂等、权限与菜单双向一致、后台页面可渲染）**、**健康检查端点（七项自检、内网放行、公网 403、备份新鲜度）**、**CORS 白名单**、**备份目标降级策略**、**mysqldump 路径自动探测**、RBAC 权限控制（含 QA 冒烟：直接 POST 越权拦截、侧边栏与页面可达性同源、权限保存端到端生效）。
+
+> 随机顺序排查偶发：`php artisan test --order-by=random`（测试不得依赖执行顺序，也不得操作真实存储盘——用 `Storage::fake()`）。
+
+## 文档索引
+
+| 文档 | 内容 |
+| --- | --- |
+| `docs/deployment-checklist.md` | **上线检查清单**（8 节，含备份与健康检查验收项） |
+| `docs/backup.md` | 数据库备份：配置、调度、恢复演练、异地（OSS） |
+| `docs/health-check.md` | `/health` 与 `/health/detailed` 端点说明与告警接入 |
+| `docs/websocket.md` | GatewayWorker 部署、票据机制、Nginx 反代 |
+| `docs/queue.md` | 队列驱动、Worker 常驻与失败任务处理 |
+| `docs/api-layer-plan.md` | API 层规划（结论：等真实多端需求触发再实施） |
+| `docs/项目现状快照-2026-10-03.md` | 全项目代码实扫快照与剩余路线 |
+| `docs/项目整体审计报告.md` | 六大能力域审计与优先级定义 |
+
+> 给 AI 助手的项目约定见 `AGENTS.md`（`CLAUDE.md` 为其引用）。
