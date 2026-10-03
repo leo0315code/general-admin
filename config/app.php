@@ -163,4 +163,29 @@ return [
 
     'operation_log_retention_days' => (int) env('OPERATION_LOG_RETENTION_DAYS', 90),
 
+    /*
+    |--------------------------------------------------------------------------
+    | 健康检查
+    |--------------------------------------------------------------------------
+    |
+    | version    应用版本号，供 /health 基础端点返回（监控面板区分部署批次）。
+    | health_token 深度健康检查的共享密钥；非内网调用方必须携带 ?token=<此值>。
+    |              留空则深度端点仅允许内网 IP 访问（FILTER_FLAG_NO_PUBLIC_RANGE）。
+    | 注意：health_token 不应入库，泄露后应立即在 .env 轮换。
+    |
+    */
+
+    'version' => env('APP_VERSION', '1.0.0'),
+
+    'health_token' => env('HEALTH_TOKEN', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | 健康检查阈值（可被 .env 覆盖）
+    |--------------------------------------------------------------------------
+    */
+    'health_disk_free_min_mb' => (float) env('HEALTH_DISK_FREE_MIN_MB', 500),
+
+    'health_queue_pending_max' => (int) env('HEALTH_QUEUE_PENDING_MAX', 50),
+
 ];

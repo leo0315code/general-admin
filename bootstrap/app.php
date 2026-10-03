@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
@@ -16,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            // 监控探针通道：独立于后台 web 路由，不带 session/CSRF 负担
+            Route::group([], base_path('routes/health.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // 后台挂载在可配置前缀下（默认 console）：未认证访问后台跳转到后台登录页
