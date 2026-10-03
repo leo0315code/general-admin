@@ -38,6 +38,32 @@ return [
             'throw' => true,
         ],
 
+        /*
+         * 异地备份目标（阿里云 OSS）。
+         *
+         * 凭证全部走环境变量，仓库里不存任何密钥。四项配置缺任意一项时，
+         * BackupTarget 会判定为未启用，备份只落本地（见 config/backup.php）。
+         */
+        'backup_offsite' => [
+            'driver' => 'oss',
+            'access_key' => env('OSS_ACCESS_KEY'),
+            'secret_key' => env('OSS_SECRET_KEY'),
+            'endpoint' => env('OSS_ENDPOINT'),
+            'bucket' => env('OSS_BUCKET'),
+            // 自定义域名绑定 bucket 时才置 true（用 CDN 域名访问 OSS 的场景）
+            'is_cname' => (bool) env('OSS_IS_CNAME', false),
+            /*
+             * 桶内目录前缀，避免与其他业务文件混在一起。
+             *
+             * 注意：前缀刻意交给 OssAdapter 处理，不写成 Laravel 的 'prefix' 磁盘配置。
+             * 当前 flysystem 版本下，Laravel 的 FilesystemManager 走 'prefix' 会去 new
+             * League\Flysystem\PathPrefixing\PathPrefixedAdapter——该类在本项目依赖组合里
+             * 不存在（flysystem 3.36 + Laravel 13.31），配了会让备份直接报错。
+             */
+            'oss_prefix' => env('OSS_PREFIX', 'backups'),
+            'visibility' => 'private',
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

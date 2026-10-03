@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\BackupTarget;
 use App\Support\DumpBinary;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -60,6 +61,10 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             DumpBinary::inject();
         }
+
+        // 异地备份驱动（阿里云 OSS）：未配置凭证时包本身也在，注册成本极低；
+        // 真正是否启用由 config/backup.php 按环境变量决定。
+        BackupTarget::registerOssDriver();
     }
 
     /**

@@ -65,7 +65,9 @@ php artisan config:cache             # 或 config:route:view 三件套
 
 > 方案与恢复步骤见 `docs/backup.md`；组件为 `spatie/laravel-backup`，每日 02:00 由调度自动执行。
 
-- [ ] **已加异地目标**：把对象存储磁盘补进 `backup.destination.disks`——只存本机磁盘等于没备份，磁盘故障会一起丢
+- [ ] **已配异地备份（阿里云 OSS）**：`.env` 补齐 `OSS_ACCESS_KEY/SECRET_KEY/ENDPOINT/BUCKET` 四项即自动双写，见 `docs/backup.md` 第七·五节。**只存本机磁盘等于没备份**——磁盘故障会一起丢
+- [ ] 启用后确认 `php artisan backup:monitor` 两个盘都 healthy；`config('backup.backup.destination.disks')` 返回 `["backups","backup_offsite"]`
+- [ ] OSS 存储桶权限为**私有**（备份含全量数据）
 - [ ] 首次部署后手工跑一次验证：`php artisan backup:run` 见到 `Backup completed!`，再 `php artisan backup:list` 确认 Healthy
 - [ ] **已做过一次恢复演练**（见 `docs/backup.md` 第六节）：把备份恢复到临时库核对条数。**没演练过的备份不算数**
 - [ ] `BACKUP_NOTIFY_EMAIL` 已配置为运维邮箱；确认失败类告警能收到

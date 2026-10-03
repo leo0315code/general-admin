@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\BackupTarget;
 use Spatie\Backup\Notifications\Notifiable;
 use Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification;
 use Spatie\Backup\Notifications\Notifications\BackupWasSuccessfulNotification;
@@ -179,15 +180,20 @@ return [
              * 刻意不放 'local' 磁盘根目录：那样备份文件会与业务附件混在同一层，
              * 既难统计占用、也容易被 `attachments:prune` 之类的清理逻辑误扫。
              * 该磁盘不对外提供 URL，无法被直接下载（见 config/filesystems.php）。
+             *
+             * 异地目标（阿里云 OSS）由 BackupTarget 按环境变量决定是否追加：
+             * 凭证四项齐全且驱动已装 → 本地 + 异地双写；否则只写本地。
+             * 只存本机磁盘等于没备份（磁盘故障会一起丢），生产环境务必配 OSS_*。
              */
-            'disks' => [
-                'backups',
-            ],
+            'disks' => BackupTarget::disks(),
 
             /*
              * Determines whether to allow backups to continue when some targets fail instead of failing completely.
+             *
+             * 启用异地后置 true：OSS 偶发网络抖动不应把「本地已成功」的备份判为整体失败。
+             * 异地长期写不进去会被 backup:monitor 发现（监控包含异地磁盘的最新备份新鲜度）。
              */
-            'continue_on_failure' => false,
+            'continue_on_failure' => BackupTarget::hasOffsite(),
         ],
 
         /*
@@ -324,7 +330,8 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['backups'],
+            // 与 destination.disks 保持一致：异地也要被新鲜度监控覆盖
+            'disks' => BackupTarget::disks(),
             /*
              * 健康检查阈值：
              * - 超过 1 天没有新备份 → 判定不健康（说明定时调度挂了或备份失败）；
