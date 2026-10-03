@@ -38,3 +38,17 @@ if (! function_exists('vue_props')) {
         );
     }
 }
+
+if (! function_exists('escape_like')) {
+    /**
+     * 转义 LIKE 通配符（% _ 与转义符本身），防止用户输入把模糊搜索变成全表匹配。
+     *
+     * 使用 SQL 标准 ESCAPE 子句（转义符 !），MySQL 与 SQLite 行为一致——
+     * 不能依赖反斜杠：SQLite 的 LIKE 不认反斜杠转义，MySQL 默认才认。
+     * 查询须写成：whereRaw("col LIKE ? ESCAPE '!'", ['%'.escape_like($kw).'%'])
+     */
+    function escape_like(string $value): string
+    {
+        return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $value);
+    }
+}

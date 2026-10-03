@@ -13,6 +13,8 @@ const props = defineProps({
     currentUrl: { type: String, default: '' },
     query: { type: Object, default: () => ({}) },
     postBase: { type: String, default: '' }, // /console/posts（restore/force-delete 基于此）
+    // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
+    can: { type: Object, default: () => ({}) },
 });
 
 const search = ref(props.keyword || '');
@@ -170,6 +172,7 @@ function forceDestroy(p) {
                         <td class="td text-right whitespace-nowrap">
                             <div class="inline-flex items-center gap-0.5">
                                 <button
+                                    v-if="can.update"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
                                     title="还原该文章"
@@ -178,6 +181,7 @@ function forceDestroy(p) {
                                     <Icon name="heroicon-o-arrow-uturn-left" class="h-4 w-4" />
                                 </button>
                                 <button
+                                    v-if="can.destroy"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition"
                                     title="彻底删除（不可恢复）"

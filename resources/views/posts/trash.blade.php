@@ -1,12 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="文章回收站" description="已删除文章可在此还原或彻底清除" :back-url="route('posts.index')">
-            <x-slot name="actions">
-                <a href="{{ route('posts.index') }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
-                    返回文章列表
-                </a>
-            </x-slot>
+        <x-page-header title="文章回收站" description="已删除文章可在此还原或彻底清除" :back-url="route('posts.index')" back-label="返回文章列表" :breadcrumbs="[['label' => '文章管理', 'url' => route('posts.index')], ['label' => '回收站']]">
         </x-page-header>
     </x-slot>
 
@@ -29,6 +23,11 @@
             'currentUrl' => url()->current(),
             'query' => request()->query(),
             'postBase' => rtrim(route('posts.index'), '/'),
+            // 服务端按钮级权限：还原归 update、彻底删除归 destroy
+            'can' => [
+                'update' => Gate::check('posts.update'),
+                'destroy' => Gate::check('posts.destroy'),
+            ],
         ];
     @endphp
 

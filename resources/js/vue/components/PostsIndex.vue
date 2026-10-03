@@ -15,6 +15,8 @@ const props = defineProps({
     query: { type: Object, default: () => ({}) },
     postBase: { type: String, default: '' }, // 后台文章资源基址，如 /console/posts
     routes: { type: Object, default: () => ({}) },
+    // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
+    can: { type: Object, default: () => ({}) },
 });
 
 const search = ref(props.keyword || '');
@@ -72,6 +74,7 @@ function sortIcon(key) {
 
 const columns = [
     { key: 'id', label: 'ID', sortable: true },
+    { key: null, label: '封面' },
     { key: 'title', label: '标题', sortable: true },
     { key: null, label: '作者' },
     { key: 'status', label: '状态', sortable: true },
@@ -170,7 +173,7 @@ function destroyPost(p) {
                     已选 <span class="font-bold">{{ selectedIds.length }}</span> 项
                 </span>
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" class="btn-danger-ghost" @click="bulkDelete">
+                    <button v-if="can.destroy" type="button" class="btn-danger-ghost" @click="bulkDelete">
                         <Icon name="heroicon-o-trash" class="h-4 w-4" />
                         批量删除
                     </button>
@@ -226,6 +229,15 @@ function destroyPost(p) {
                             >
                         </td>
                         <td class="td text-gray-500 dark:text-gray-400">{{ p.id }}</td>
+                        <td class="td">
+                            <img
+                                v-if="p.cover_url"
+                                :src="p.cover_url"
+                                alt="封面"
+                                class="h-9 w-14 rounded object-cover bg-gray-100 dark:bg-gray-800"
+                            >
+                            <span v-else class="text-xs text-gray-400">—</span>
+                        </td>
                         <td class="td font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{{ p.title }}</td>
                         <td class="td text-gray-600 dark:text-gray-300">{{ p.author || '—' }}</td>
                         <td class="td">
@@ -249,6 +261,7 @@ function destroyPost(p) {
                             <div class="inline-flex items-center gap-0.5">
                                 <!-- 状态切换（发布/下线） -->
                                 <button
+                                    v-if="can.update"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg transition"
                                     :class="p.is_published
@@ -261,6 +274,7 @@ function destroyPost(p) {
                                 </button>
 
                                 <a
+                                    v-if="can.update"
                                     :href="`${postBase}/${p.id}/edit`"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
                                     title="编辑"
@@ -269,6 +283,7 @@ function destroyPost(p) {
                                 </a>
 
                                 <button
+                                    v-if="can.destroy"
                                     type="button"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition"
                                     title="删除"
@@ -281,7 +296,7 @@ function destroyPost(p) {
                     </tr>
 
                     <tr v-if="posts.length === 0">
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="8" class="px-6 py-12 text-center">
                             <Icon name="heroicon-o-document-text" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
                             <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">没有找到文章</p>
                         </td>

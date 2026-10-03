@@ -2,10 +2,12 @@
     <x-slot name="header">
         <x-page-header title="文章管理" description="内容 CRUD 示例模板，可复制扩展为业务模块">
             <x-slot name="actions">
-                <a href="{{ route('posts.export', request()->query()) }}" class="btn-secondary" title="导出当前搜索结果">
-                    <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
-                    导出
-                </a>
+                @can('posts.export')
+                    <a href="{{ route('posts.export', request()->query()) }}" class="btn-secondary" title="导出当前搜索结果">
+                        <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
+                        导出
+                    </a>
+                @endcan
                 <a href="{{ route('posts.trash') }}" class="btn-secondary relative" title="已删除文章（回收站）">
                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                     回收站
@@ -13,10 +15,12 @@
                         <span class="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">{{ $trashedCount }}</span>
                     @endif
                 </a>
-                <a href="{{ route('posts.create') }}" class="btn-primary">
-                    <x-icon name="heroicon-o-plus" class="h-4 w-4" />
-                    新建文章
-                </a>
+                @can('posts.create')
+                    <a href="{{ route('posts.create') }}" class="btn-primary">
+                        <x-icon name="heroicon-o-plus" class="h-4 w-4" />
+                        新建文章
+                    </a>
+                @endcan
             </x-slot>
         </x-page-header>
     </x-slot>
@@ -34,6 +38,9 @@
                 'author' => $post->user->name ?? null,
                 'is_published' => $post->isPublished(),
                 'published_at' => $post->published_at?->format('Y-m-d H:i'),
+                'cover_url' => $post->cover_attachment_id
+                    ? route('posts.cover-preview', $post->cover_attachment_id)
+                    : null,
             ])->values(),
             'sort' => $sort ?? 'id',
             'sortDir' => $dir ?? 'desc',
@@ -42,6 +49,12 @@
             'postBase' => rtrim(route('posts.index'), '/'),
             'routes' => [
                 'bulk_delete' => route('posts.bulk-delete'),
+            ],
+            // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
+            'can' => [
+                'create' => Gate::check('posts.create'),
+                'update' => Gate::check('posts.update'),
+                'destroy' => Gate::check('posts.destroy'),
             ],
         ];
     @endphp

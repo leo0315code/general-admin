@@ -8,9 +8,12 @@ use App\Exports\UsersImportTemplate;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Imports\UsersImport;
+use App\Models\Notification;
 use App\Models\User;
 use App\Notifications\AccountCredentials;
 use App\Support\ListQuery;
+use App\Support\Notifier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -52,8 +55,8 @@ class UserController extends Controller
             ->with('roles:id,name')
             ->when($keyword, function ($query, string $keyword) {
                 $query->where(function ($query) use ($keyword) {
-                    $query->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $query->whereRaw("name LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%'])
+                        ->orWhereRaw("email LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%']);
                 });
             })
             ->when(
@@ -93,8 +96,9 @@ class UserController extends Controller
 
         $user->syncRoles($request->validated('roles', []));
 
-        // 新建账号：告知初始密码（失败不影响创建结果）
+        // 新建账号：邮件告知初始密码 + 站内通知（失败均不影响创建结果）
         $this->notifyCredentials($user, (string) $request->validated('password'), 'created');
+        $this->notifyInApp($user, 'created');
 
         return redirect()
             ->route('users.index')
@@ -166,6 +170,7 @@ class UserController extends Controller
 
         // 重置密码：告知新密码（失败不影响重置结果）
         $this->notifyCredentials($user, (string) $request->input('new_password'), 'reset');
+        $this->notifyInApp($user, 'reset');
 
         return redirect()
             ->route('users.edit', $user)
@@ -190,6 +195,35 @@ class UserController extends Controller
             $user->notify(new AccountCredentials($plainPassword, $scene));
         } catch (Throwable $e) {
             Log::warning('账号凭据邮件发送失败', [
+                'user_id' => $user->id,
+                'scene' => $scene,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 站内通知（新建账号 / 重置密码）。
+     *
+     * 与邮件不同：站内通知**不依赖邮箱**，邮箱为空的用户同样能收到；
+     * 写库异常记日志后继续，不阻断后台操作。
+     */
+    protected function notifyInApp(User $user, string $scene): void
+    {
+        $isCreated = $scene === 'created';
+
+        try {
+            Notifier::send(
+                $user,
+                $isCreated ? Notification::TYPE_ACCOUNT_CREATED : Notification::TYPE_PASSWORD_RESET,
+                $isCreated ? '账号已创建' : '登录密码已被重置',
+                $isCreated
+                    ? "管理员已为你创建账号「{$user->name}」。初始密码已通过邮件发送（若未设置邮箱请联系管理员），登录后请立即修改。"
+                    : '管理员已重置你的登录密码，下次登录需先修改密码。若非本人操作，请联系管理员。',
+                route('profile.edit'),
+            );
+        } catch (Throwable $e) {
+            Log::warning('站内通知写入失败', [
                 'user_id' => $user->id,
                 'scene' => $scene,
                 'error' => $e->getMessage(),
@@ -357,8 +391,8 @@ class UserController extends Controller
             ->with('roles:id,name')
             ->when($keyword, function ($query, string $keyword) {
                 $query->where(function ($query) use ($keyword) {
-                    $query->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $query->whereRaw("name LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%'])
+                        ->orWhereRaw("email LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%']);
                 });
             })
             ->when(
@@ -395,6 +429,31 @@ class UserController extends Controller
 
         return back()
             ->with('success', "用户「{$name}」已彻底删除，无法恢复。");
+    }
+
+    /**
+     * 用户搜索（轻量 JSON，供「发送消息」选人）
+     *
+     * 只返回 id/name/email，限量 20 条；不发密码、角色等敏感字段。
+     * 权限：有用户管理权限或能发消息的人都可用。
+     */
+    public function search(Request $request): JsonResponse
+    {
+        abort_unless(Gate::check('user.manage') || Gate::check('messages.create'), 403);
+
+        $keyword = trim((string) $request->query('q'));
+
+        $users = User::query()
+            ->where('status', User::STATUS_ACTIVE)
+            ->when($keyword !== '', fn ($query) => $query->where(
+                fn ($q) => $q->whereRaw("name LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%'])
+                    ->orWhereRaw("email LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%'])
+            ))
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'email']);
+
+        return response()->json(['data' => $users]);
     }
 
     /** 导出用户数据（Excel，跟随当前搜索条件） */
@@ -450,6 +509,9 @@ class UserController extends Controller
                 ->with('import_errors_token', $this->cacheImportErrors(UsersImport::$failedRows));
         }
 
+        // 导入结果留痕：flash 关页即失，通知中心可回看
+        $this->notifyImportResult($request->user(), $success, count($errors));
+
         return $redirect;
     }
 
@@ -475,6 +537,25 @@ class UserController extends Controller
             new UsersImportErrorsExport($rows),
             '用户导入失败明细_'.now()->format('Ymd_His').'.xlsx'
         );
+    }
+
+    /** 导入结果写进通知中心（成功/失败条数），便于事后回看 */
+    protected function notifyImportResult(User $operator, int $success, int $failed): void
+    {
+        try {
+            Notifier::send(
+                $operator,
+                Notification::TYPE_USERS_IMPORTED,
+                '用户导入完成',
+                "成功 {$success} 条".($failed > 0 ? "，失败 {$failed} 条（可在导入页下载失败明细）。" : '。'),
+                route('users.index'),
+            );
+        } catch (Throwable $e) {
+            Log::warning('导入结果站内通知写入失败', [
+                'user_id' => $operator->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** 暂存失败明细并返回下载 token（10 分钟有效，下载时一次性消费） */

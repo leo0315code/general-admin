@@ -33,8 +33,8 @@ class UsersExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMappin
             ->with('roles:id,name')
             ->when($this->keyword, function (Builder $query, string $keyword) {
                 $query->where(function (Builder $query) use ($keyword) {
-                    $query->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $query->whereRaw("name LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%'])
+                        ->orWhereRaw("email LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%']);
                 });
             })
             ->latest('id');

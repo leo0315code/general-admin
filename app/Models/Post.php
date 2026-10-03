@@ -28,6 +28,7 @@ class Post extends Model
         'user_id',
         'title',
         'content',
+        'cover_attachment_id',
         'status',
         'published_at',
     ];
@@ -46,6 +47,12 @@ class Post extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** 封面附件（图片，私有盘，预览走鉴权路由） */
+    public function cover(): BelongsTo
+    {
+        return $this->belongsTo(Attachment::class, 'cover_attachment_id');
+    }
+
     /** 已发布文章作用域 */
     public function scopePublished(Builder $query): Builder
     {
@@ -62,7 +69,7 @@ class Post extends Model
     public function scopeSearch(Builder $query, ?string $keyword): Builder
     {
         return $query->when($keyword, function (Builder $query, string $keyword) {
-            $query->where('title', 'like', "%{$keyword}%");
+            $query->whereRaw("title LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%']);
         });
     }
 
