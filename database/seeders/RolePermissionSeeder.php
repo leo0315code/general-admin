@@ -25,6 +25,7 @@ class RolePermissionSeeder extends Seeder
         'posts.create',
         'posts.update',
         'posts.destroy',
+        'posts.export',
     ];
 
     public function run(): void

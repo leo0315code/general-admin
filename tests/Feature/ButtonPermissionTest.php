@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Menu;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -47,11 +48,18 @@ class ButtonPermissionTest extends TestCase
      *
      * @return array<string, mixed>
      */
-    private function mountedProps(string $html): array
+    /**
+     * 取指定组件的挂载 props（页面可能同时挂载多个组件，如顶栏铃铛 + 列表）
+     *
+     * @param  string  $component  组件名，如 dict-types-index
+     */
+    private function mountedProps(string $html, string $component): array
     {
-        $this->assertMatchesRegularExpression('/data-props=\'([^\']*)\'/', $html, '页面未渲染 Vue 挂载点');
+        $pattern = '/data-component="'.preg_quote($component, '/').'" data-props=\'([^\']*)\'/';
 
-        preg_match('/data-props=\'([^\']*)\'/', $html, $matches);
+        $this->assertMatchesRegularExpression($pattern, $html, "页面未渲染 {$component} 挂载点");
+
+        preg_match($pattern, $html, $matches);
 
         return json_decode($matches[1], true);
     }
@@ -172,7 +180,7 @@ class ButtonPermissionTest extends TestCase
         $viewer = $this->viewer(['dict.manage', 'settings.manage']);
 
         $dictHtml = (string) $this->actingAs($viewer)->get(route('dict-types.index'))->getContent();
-        $dictProps = $this->mountedProps($dictHtml);
+        $dictProps = $this->mountedProps($dictHtml, 'dict-types-index');
 
         $this->assertFalse($dictProps['can']['update'], '无 dict.update 时行内编辑按钮应隐藏');
         $this->assertFalse($dictProps['can']['destroy'], '无 dict.destroy 时行内删除按钮应隐藏');
@@ -184,9 +192,115 @@ class ButtonPermissionTest extends TestCase
 
         $settingsHtml = (string) $this->actingAs($viewer)->get(route('settings.index'))->getContent();
         $this->assertFalse(
-            $this->mountedProps($settingsHtml)['canUpdate'],
+            $this->mountedProps($settingsHtml, 'settings-form')['canUpdate'],
             '无 settings.update 时保存按钮应隐藏'
         );
+    }
+
+    public function test_post_write_requires_button_permission(): void
+    {
+        $viewer = $this->viewer(['post.manage']);
+        // 作者本人：Policy（数据范围）放行，但按钮级权限不足，仍须被拦
+        $post = Post::factory()->create(['user_id' => $viewer->id]);
+        $originalStatus = $post->status;
+
+        $this->actingAs($viewer)->get(route('posts.create'))->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->post(route('posts.store'), [
+                'title' => '越权文章',
+                'content' => '内容',
+                'status' => Post::STATUS_DRAFT,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($viewer)->get(route('posts.edit', $post))->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->put(route('posts.update', $post), ['title' => $post->title, 'content' => 'x', 'status' => Post::STATUS_DRAFT])
+            ->assertForbidden();
+
+        $this->actingAs($viewer)->patch(route('posts.toggle-status', $post))->assertForbidden();
+        $this->actingAs($viewer)->delete(route('posts.destroy', $post))->assertForbidden();
+
+        // 批量删除 = 删除按钮；导出 = 独立的 posts.export
+        $this->actingAs($viewer)
+            ->post(route('posts.bulk-delete'), ['ids' => [$post->id]])
+            ->assertForbidden();
+
+        $this->actingAs($viewer)->get(route('posts.export'))->assertForbidden();
+
+        $this->assertSame($originalStatus, $post->fresh()->status, '未获编辑权限时状态不应变化');
+        $this->assertFalse($post->fresh()->trashed(), '未获删除权限的文章不应被软删除');
+        $this->assertDatabaseMissing('posts', ['title' => '越权文章']);
+    }
+
+    public function test_post_restore_and_force_destroy_require_button_permission(): void
+    {
+        $viewer = $this->viewer(['post.manage']);
+        $trashed = Post::factory()->create(['user_id' => $viewer->id]);
+        $trashed->delete();
+
+        // 还原归「编辑」按钮，彻底删除归「删除」按钮
+        $this->actingAs($viewer)
+            ->patch(route('posts.restore', $trashed->id))
+            ->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->delete(route('posts.force-destroy', $trashed->id))
+            ->assertForbidden();
+
+        $this->assertNotNull(
+            Post::query()->onlyTrashed()->find($trashed->id),
+            '无权限时回收站记录必须原样保留'
+        );
+    }
+
+    public function test_post_view_receives_permission_flags_matching_server_gate(): void
+    {
+        $viewer = $this->viewer(['post.manage']);
+
+        $html = (string) $this->actingAs($viewer)->get(route('posts.index'))->getContent();
+        $props = $this->mountedProps($html, 'posts-index');
+
+        $this->assertFalse($props['can']['create'], '无 posts.create 时不渲染新建入口');
+        $this->assertFalse($props['can']['update'], '无 posts.update 时行内编辑/发布按钮应隐藏');
+        $this->assertFalse($props['can']['destroy'], '无 posts.destroy 时行内删除按钮应隐藏');
+        $this->assertStringNotContainsString(route('posts.create'), $html);
+        $this->assertStringNotContainsString(route('posts.export'), $html, '无 posts.export 时应隐藏导出入口');
+
+        $trashProps = $this->mountedProps(
+            (string) $this->actingAs($viewer)->get(route('posts.trash'))->getContent(),
+            'posts-trash'
+        );
+
+        $this->assertFalse($trashProps['can']['update'], '无 posts.update 时还原按钮应隐藏');
+        $this->assertFalse($trashProps['can']['destroy'], '无 posts.destroy 时彻底删除按钮应隐藏');
+    }
+
+    public function test_post_button_permission_grants_access_when_granted(): void
+    {
+        $operator = $this->viewer(['post.manage', 'posts.create', 'posts.update', 'posts.destroy']);
+
+        $this->actingAs($operator)
+            ->post(route('posts.store'), [
+                'title' => '运营文章',
+                'content' => '内容',
+                'status' => Post::STATUS_DRAFT,
+            ])
+            ->assertRedirect(route('posts.index'));
+
+        $post = Post::query()->where('title', '运营文章')->firstOrFail();
+
+        $this->actingAs($operator)
+            ->patch(route('posts.toggle-status', $post))
+            ->assertRedirect(route('posts.index'));
+
+        $this->actingAs($operator)
+            ->delete(route('posts.destroy', $post))
+            ->assertRedirect(route('posts.index'));
+
+        $this->assertSoftDeleted('posts', ['id' => $post->id]);
     }
 
     public function test_button_permission_grants_access_when_granted(): void

@@ -32,8 +32,12 @@ class SeedDataTest extends TestCase
 
     public function test_seed_creates_expected_baseline_rows(): void
     {
-        // 26 个原始节点 + 4 个新增按钮权限（dict.create/update/destroy、settings.update）
-        $this->assertSame(30, Menu::query()->count());
+        // 26 个原始节点 + 12 个新增节点：
+        // dict.create/update/destroy、settings.update、posts.export、
+        // attachments.manage 菜单及其 upload/destroy 按钮、
+        // messages.manage 菜单及其 create/revoke 按钮、
+        // log.export 导出日志按钮
+        $this->assertSame(38, Menu::query()->count());
         $this->assertSame(2, Role::query()->count());
         $this->assertSame(14, User::query()->count());
         $this->assertSame(20, Post::query()->count());

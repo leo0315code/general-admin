@@ -82,6 +82,7 @@ class MenuPermissionSeeder extends Seeder
                             ['type' => Menu::TYPE_BUTTON, 'title' => '新建文章', 'permission_name' => 'posts.create', 'sort' => 10],
                             ['type' => Menu::TYPE_BUTTON, 'title' => '编辑文章', 'permission_name' => 'posts.update', 'sort' => 20],
                             ['type' => Menu::TYPE_BUTTON, 'title' => '删除文章', 'permission_name' => 'posts.destroy', 'sort' => 30],
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '导出文章', 'permission_name' => 'posts.export', 'sort' => 40],
                         ],
                     ],
                 ],
@@ -158,6 +159,35 @@ class MenuPermissionSeeder extends Seeder
                         'route' => 'logs.index',
                         'sort' => 50,
                         'remark' => '查看登录审计与操作日志',
+                        'children' => [
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '导出日志', 'permission_name' => 'log.export', 'sort' => 10],
+                        ],
+                    ],
+                    [
+                        'type' => Menu::TYPE_MENU,
+                        'title' => '附件管理',
+                        'permission_name' => 'attachments.manage',
+                        'icon' => 'heroicon-o-paper-clip',
+                        'route' => 'attachments.index',
+                        'sort' => 55,
+                        'remark' => '上传与管理附件（私有磁盘存储，下载需鉴权）',
+                        'children' => [
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '上传附件', 'permission_name' => 'attachments.upload', 'sort' => 10],
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '删除附件', 'permission_name' => 'attachments.destroy', 'sort' => 20],
+                        ],
+                    ],
+                    [
+                        'type' => Menu::TYPE_MENU,
+                        'title' => '消息发布',
+                        'permission_name' => 'messages.manage',
+                        'icon' => 'heroicon-o-megaphone',
+                        'route' => 'messages.index',
+                        'sort' => 56,
+                        'remark' => '主动向用户发送站内消息（指定用户 / 按角色 / 全员），支持撤回',
+                        'children' => [
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '发送消息', 'permission_name' => 'messages.create', 'sort' => 10],
+                            ['type' => Menu::TYPE_BUTTON, 'title' => '撤回消息', 'permission_name' => 'messages.revoke', 'sort' => 20],
+                        ],
                     ],
                     [
                         'type' => Menu::TYPE_MENU,

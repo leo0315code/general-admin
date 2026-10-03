@@ -1,15 +1,19 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DictItemController;
 use App\Http\Controllers\DictTypeController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\MessageBroadcastController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OperationLogController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WsTicketController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,6 +48,9 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
 
     // 用户管理：需要 user.manage 权限
     Route::middleware('permission:user.manage')->group(function () {
+        // 用户搜索（供「发送消息」选人；须在 resource 之前注册）
+        Route::get('users/search', [UserController::class, 'search'])->name('users.search');
+
         // 回收站（须在 resource 之前注册，避免被 {user} 参数捕获）
         Route::get('users/trash', [UserController::class, 'trash'])->name('users.trash');
         Route::patch('users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
@@ -79,15 +86,29 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
             ->name('menus.toggle-status');
     });
 
-    // 操作日志：需要 log.manage 权限
+    // 操作日志：需要 log.manage 权限（详情跟随菜单权限；导出需按钮权限 log.export）
     Route::middleware('permission:log.manage')->group(function () {
+        // 静态路径须先于 {log} 注册，避免被参数捕获
+        Route::get('logs/export', [OperationLogController::class, 'export'])->name('logs.export');
         Route::get('logs', [OperationLogController::class, 'index'])->name('logs.index');
+        Route::get('logs/{log}', [OperationLogController::class, 'show'])->name('logs.show');
     });
 
     // 系统设置：需要 settings.manage 权限
     Route::middleware('permission:settings.manage')->group(function () {
         Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    });
+
+    // 附件管理（上传基座）：需要 attachments.manage 权限
+    Route::middleware('permission:attachments.manage')->group(function () {
+        Route::get('attachments', [AttachmentController::class, 'index'])->name('attachments.index');
+        Route::post('attachments', [AttachmentController::class, 'store'])->name('attachments.store');
+        // 下载须在 {attachment} 之前注册，避免被参数捕获
+        Route::get('attachments/{attachment}/download', [AttachmentController::class, 'download'])
+            ->name('attachments.download');
+        Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy'])
+            ->name('attachments.destroy');
     });
 
     // 数据字典：需要 dict.manage 权限
@@ -99,6 +120,9 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
     // 文章管理：需要 post.manage 权限（示例 CRUD 模板）
     Route::middleware('permission:post.manage')->group(function () {
         // 回收站（须在 resource 之前注册）
+        // 文章封面（附件基座的业务接入）：上传/预览须在 resource 之前注册
+        Route::post('posts/cover-upload', [PostController::class, 'coverUpload'])->name('posts.cover-upload');
+        Route::get('posts/cover-preview/{attachment}', [PostController::class, 'coverPreview'])->name('posts.cover-preview');
         Route::get('posts/trash', [PostController::class, 'trash'])->name('posts.trash');
         Route::patch('posts/{post}/restore', [PostController::class, 'restore'])->name('posts.restore');
         Route::delete('posts/{post}/force-delete', [PostController::class, 'forceDestroy'])->name('posts.force-destroy');
@@ -111,6 +135,35 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
             ->name('posts.toggle-status');
         // Excel 导出
         Route::get('posts/export', [PostController::class, 'export'])->name('posts.export');
+    });
+
+    // WebSocket 连接票据（一次性，供通知铃铛组件建连后绑定 uid）
+    Route::post('ws/ticket', [WsTicketController::class, 'issue'])->name('ws.ticket');
+
+    // 通知中心（个人数据，不挂菜单级权限：越权访问他人通知由 NotificationPolicy 拦）
+    // 静态路径须先于 {notification} 注册，避免被参数捕获
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])
+        ->name('notifications.unread-count');
+    Route::patch('notifications/read-all', [NotificationController::class, 'readAll'])
+        ->name('notifications.read-all');
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'read'])
+        ->name('notifications.read');
+    Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])
+        ->name('notifications.destroy');
+
+    // 主动发送消息（群发站内通知）：看历史 / 发送 / 撤回 三级权限
+    Route::middleware('permission:messages.manage')->group(function () {
+        Route::get('messages', [MessageBroadcastController::class, 'index'])->name('messages.index');
+        Route::get('messages/create', [MessageBroadcastController::class, 'create'])
+            ->middleware('permission:messages.create')
+            ->name('messages.create');
+        Route::post('messages', [MessageBroadcastController::class, 'store'])
+            ->middleware('permission:messages.create')
+            ->name('messages.store');
+        Route::delete('messages/{broadcast}/revoke', [MessageBroadcastController::class, 'revoke'])
+            ->middleware('permission:messages.revoke')
+            ->name('messages.revoke');
     });
 
     // 个人资料

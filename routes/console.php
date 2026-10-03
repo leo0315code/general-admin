@@ -25,6 +25,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('model:prune')->dailyAt('03:00');
 
+// 附件清理：过期附件 + 磁盘孤儿文件（保留天数见 config uploads.prune_days）
+Schedule::command('attachments:prune')->dailyAt('03:20')->withoutOverlapping();
+
 Schedule::call(function () {
     // 仅清理已过期的缓存行（不误删有效缓存；expiration 为 unix 时间戳）
     DB::table('cache')->where('expiration', '<', now()->timestamp)->delete();

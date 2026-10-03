@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Notifications\AccountCredentials;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
@@ -105,5 +106,32 @@ class AccountNotificationTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertTrue(app('hash')->check('brandnew123456', $user->fresh()->password));
+    }
+
+    /** 邮件必须走队列（防回归：有人误删 ShouldQueue 会退回同步 SMTP 阻塞主流程） */
+    public function test_credentials_notification_is_queued(): void
+    {
+        $this->assertInstanceOf(ShouldQueue::class, new AccountCredentials('plain-password', 'created'));
+    }
+
+    /**
+     * database 队列序列化往返安全（readonly 属性 + 序列化不炸）：
+     * 入队后 jobs 表有记录 → queue:work 处理后任务清空。
+     * 邮件本身经 phpunit 的 MAIL_MAILER=array 无害发送，不在此断言。
+     */
+    public function test_database_queue_roundtrip_serializes_safely(): void
+    {
+        config(['queue.default' => 'database']);
+
+        $user = User::factory()->create(['email' => 'queued@example.com']);
+        $user->notify(new AccountCredentials('plain-password', 'created'));
+
+        // 已入队（jobs 表有记录；序列化成功即证明 readonly 属性安全）
+        $this->assertSame(1, \DB::table('jobs')->count());
+
+        // worker 消费一条后任务清空，序列化/反序列化链路无异常
+        $this->artisan('queue:work', ['--once' => true])->assertSuccessful();
+
+        $this->assertSame(0, \DB::table('jobs')->count());
     }
 }

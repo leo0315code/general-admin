@@ -123,7 +123,8 @@ class SystemFeaturesTest extends TestCase
                 'description' => '订单状态字典',
                 'status' => '1',
             ])
-            ->assertRedirect(route('dict-types.index'));
+            // 创建后直达编辑页（该页内嵌字典项区块，可立刻补充字典项）
+            ->assertRedirect(route('dict-types.edit', DictType::query()->where('type', 'order_status')->firstOrFail()));
 
         $typeId = DictType::query()->where('type', 'order_status')->value('id');
 
