@@ -75,7 +75,7 @@ class DictItemController extends Controller
         Dict::flush();
 
         return redirect()
-            ->route('dict-items.index', ['dict_type_id' => $dictType->id])
+            ->to($this->resolveRedirect($request, route('dict-items.index', ['dict_type_id' => $dictType->id])))
             ->with('success', '字典项「'.$validated['label'].'」创建成功。');
     }
 
@@ -114,11 +114,11 @@ class DictItemController extends Controller
         Dict::flush();
 
         return redirect()
-            ->route('dict-items.index', ['dict_type_id' => $dictItem->dict_type_id])
+            ->to($this->resolveRedirect($request, route('dict-items.index', ['dict_type_id' => $dictItem->dict_type_id])))
             ->with('success', '字典项「'.$dictItem->label.'」更新成功。');
     }
 
-    public function destroy(DictItem $dictItem): RedirectResponse
+    public function destroy(Request $request, DictItem $dictItem): RedirectResponse
     {
         Gate::authorize('dict.destroy');
         $dictTypeId = $dictItem->dict_type_id;
@@ -128,7 +128,24 @@ class DictItemController extends Controller
         Dict::flush();
 
         return redirect()
-            ->route('dict-items.index', ['dict_type_id' => $dictTypeId])
+            ->to($this->resolveRedirect($request, route('dict-items.index', ['dict_type_id' => $dictTypeId])))
             ->with('success', '字典项「'.$label.'」已删除。');
+    }
+
+    /**
+     * 解析回跳地址：仅接受 /console/ 开头的站内相对路径，防开放重定向。
+     * 来自「字典类型编辑页」内嵌字典项区块时，保存/删除后回到该编辑页。
+     */
+    private function resolveRedirect(Request $request, string $fallback): string
+    {
+        $to = $request->input('redirect_to');
+        // 后台前缀可配置（config/app.php 的 admin_prefix），这里只放行同一前缀下的站内路径
+        $prefix = '/'.trim((string) config('app.admin_prefix', 'console'), '/').'/';
+
+        if (! is_string($to) || ! str_starts_with($to, $prefix)) {
+            return $fallback;
+        }
+
+        return str_contains($to, '..') || str_contains($to, '\\') ? $fallback : $to;
     }
 }

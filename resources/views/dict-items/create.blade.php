@@ -1,14 +1,24 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="新建字典项" description="字典类型：{{ $dictType->name }}" :back-url="route('dict-items.index', ['dict_type_id' => $dictType->id])">
-            <x-slot name="actions">
-                <a href="{{ route('dict-items.index', ['dict_type_id' => $dictType->id]) }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
-                    返回字典项
-                </a>
-            </x-slot>
+        @php
+            // 来自「字典类型编辑页」时回跳该页，否则回字典项列表页
+            // 仅放行后台前缀下的站内路径，避免开放重定向
+            $adminPrefix = '/'.trim((string) config('app.admin_prefix', 'console'), '/').'/';
+            $redirectTo = request('redirect_to');
+            $redirectTo = is_string($redirectTo) && str_starts_with($redirectTo, $adminPrefix) ? $redirectTo : null;
+            $backUrl = $redirectTo ?: route('dict-items.index', ['dict_type_id' => $dictType->id]);
+        @endphp
+
+        <x-page-header
+            title="新建字典项"
+            description="字典类型：{{ $dictType->name }}"
+            :back-url="$backUrl"
+            :back-label="$redirectTo ? '返回类型' : '返回字典项'"
+        >
         </x-page-header>
     </x-slot>
+
+    <x-flash-messages />
 
     @php
     $dictItemFormProps = [
@@ -24,7 +34,8 @@
             'remark' => old('remark', ''),
         ],
         'errors' => $errors->toArray(),
-        'indexUrl' => route('dict-items.index', ['dict_type_id' => $dictType->id]),
+        'indexUrl' => $backUrl,
+        'redirectTo' => $redirectTo ?? '',
     ];
 @endphp
 

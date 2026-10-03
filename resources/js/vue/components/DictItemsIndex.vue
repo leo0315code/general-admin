@@ -12,6 +12,12 @@ const props = defineProps({
     itemsBase: { type: String, default: '' }, // /console/dict-items
     // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
     can: { type: Object, default: () => ({}) },
+    // 关闭表头排序链接（内嵌到字典类型编辑页时用：排序请到字典项列表页操作）
+    sortable: { type: Boolean, default: true },
+    // 附加到行内编辑链接的查询串（内嵌区块带上 redirect_to，编辑保存后回跳来源页）
+    editQuery: { type: String, default: '' },
+    // 删除后回跳的站内路径（空则回字典项列表页）
+    redirectTo: { type: String, default: '' },
 });
 
 const columns = [
@@ -41,14 +47,26 @@ function sortIcon(key) {
     return 'heroicon-o-chevron-up-down';
 }
 
+function hiddenInput(name, value) {
+    const el = document.createElement('input');
+    el.type = 'hidden';
+    el.name = name;
+    el.value = value;
+    return el;
+}
+
 function confirmAction({ action, method, title, message, variant = 'danger' }) {
     const token = document.querySelector('meta[name=csrf-token]')?.content || '';
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = action;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
+    // 用 DOM API 组装隐藏字段，避免字符串拼接带来的注入面
+    form.appendChild(hiddenInput('_token', token));
     if (method && method !== 'POST') {
-        form.innerHTML += `<input type="hidden" name="_method" value="${method}">`;
+        form.appendChild(hiddenInput('_method', method));
+    }
+    if (props.redirectTo) {
+        form.appendChild(hiddenInput('redirect_to', props.redirectTo));
     }
     document.body.appendChild(form);
     window.dispatchEvent(
@@ -79,7 +97,7 @@ function destroyItem(item) {
                             :class="col.align === 'right' ? 'text-right' : ''"
                         >
                             <a
-                                v-if="col.sortable"
+                                v-if="col.sortable && sortable"
                                 :href="sortUrl(col.key)"
                                 class="th-sortable inline-flex items-center gap-1 group"
                             >
@@ -119,7 +137,7 @@ function destroyItem(item) {
                             <div class="inline-flex items-center gap-0.5">
                                 <a
                                     v-if="can.update"
-                                    :href="`${itemsBase}/${item.id}/edit`"
+                                    :href="`${itemsBase}/${item.id}/edit${editQuery}`"
                                     class="inline-flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition"
                                     title="编辑"
                                 >

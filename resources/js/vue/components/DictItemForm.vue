@@ -13,6 +13,7 @@ const props = defineProps({
     errors: { type: Object, default: () => ({}) },
     indexUrl: { type: String, default: '/console/dict-items' },
     destroyUrl: { type: String, default: '' }, // edit 模式删除
+    redirectTo: { type: String, default: '' }, // 提交/删除后回跳的站内路径（空则回列表页）
 });
 
 const label = ref(props.old.label ?? '');
@@ -25,12 +26,25 @@ function fieldError(field) {
     return props.errors[field] || [];
 }
 
+function hiddenInput(name, value) {
+    const el = document.createElement('input');
+    el.type = 'hidden';
+    el.name = name;
+    el.value = value;
+    return el;
+}
+
 function confirmDestroy() {
     const token = document.querySelector('meta[name=csrf-token]')?.content || '';
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = props.destroyUrl;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}"><input type="hidden" name="_method" value="DELETE">`;
+    // 用 DOM API 组装隐藏字段，避免字符串拼接带来的注入面
+    form.appendChild(hiddenInput('_token', token));
+    form.appendChild(hiddenInput('_method', 'DELETE'));
+    if (props.redirectTo) {
+        form.appendChild(hiddenInput('redirect_to', props.redirectTo));
+    }
     document.body.appendChild(form);
     window.dispatchEvent(
         new CustomEvent('app:confirm', {
@@ -48,6 +62,7 @@ function confirmDestroy() {
     <form :action="action" :method="method === 'GET' ? 'GET' : 'POST'" class="p-6 space-y-6" novalidate>
         <input type="hidden" name="_token" :value="csrf">
         <input v-if="method !== 'POST' && method !== 'GET'" type="hidden" name="_method" :value="method">
+        <input v-if="redirectTo" type="hidden" name="redirect_to" :value="redirectTo">
 
         <!-- 字典项名称 -->
         <div>

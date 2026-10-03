@@ -100,7 +100,16 @@ function destroyType(dt) {
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ dt.description || '—' }}</td>
                         <td class="td">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-info-100 dark:bg-info-500/20 text-xs font-medium text-info-700 dark:text-info-300">{{ dt.items_count }}</span>
+                            <!-- 数量即入口：点击进入该类型的字典项列表 -->
+                            <a
+                                :href="`${itemsBase}?dict_type_id=${dt.id}`"
+                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-info-100 dark:bg-info-500/20 hover:bg-info-200 dark:hover:bg-info-500/30 text-xs font-medium text-info-700 dark:text-info-300 transition"
+                                title="管理该类型的字典项"
+                            >
+                                <Icon name="heroicon-o-list-bullet" class="h-3.5 w-3.5" />
+                                <template v-if="dt.items_count > 0">{{ dt.items_count }} 项</template>
+                                <template v-else>添加字典项</template>
+                            </a>
                         </td>
                         <td class="td">
                             <span
