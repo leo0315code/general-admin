@@ -1,12 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="编辑用户：{{ $user->name }}" description="{{ $user->email }}" :back-url="route('users.index')">
-            <x-slot name="actions">
-                <a href="{{ route('users.index') }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
-                    返回列表
-                </a>
-            </x-slot>
+        <x-page-header title="编辑用户：{{ $user->name }}" description="{{ $user->email }}" :back-url="route('users.index')" :breadcrumbs="[['label' => '用户管理', 'url' => route('users.index')], ['label' => '编辑用户']]">
         </x-page-header>
     </x-slot>
 

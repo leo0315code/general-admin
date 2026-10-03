@@ -84,6 +84,17 @@
                             </div>
                         </div>
 
+                        {{-- 通知中心入口（铃铛 + 未读徽章）
+                             由 Vue 组件接管：优先走 GatewayWorker 推送，不可用时自动退化为轮询；
+                             初始未读数走 30 秒缓存（Notifier / 标记已读会主动失效）。 --}}
+                        @php($notificationBellProps = [
+                            'count' => \App\Models\Notification::unreadCountFor(Auth::user()->id),
+                            'listUrl' => route('notifications.index'),
+                            'unreadUrl' => route('notifications.unread-count'),
+                            'ticketUrl' => route('ws.ticket'),
+                        ])
+                        <x-vue-mount component="notification-bell" :props="$notificationBellProps" />
+
                         {{-- 明/暗切换按钮 --}}
                         <button
                             type="button"

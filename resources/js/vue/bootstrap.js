@@ -12,6 +12,12 @@ import LogsIndex from './components/LogsIndex.vue';
 import LoginPage from './components/LoginPage.vue';
 import MenuForm from './components/MenuForm.vue';
 import MenusIndex from './components/MenusIndex.vue';
+import MessageComposer from './components/MessageComposer.vue';
+import MessagesIndex from './components/MessagesIndex.vue';
+import AttachmentsIndex from './components/AttachmentsIndex.vue';
+import AttachmentUploader from './components/AttachmentUploader.vue';
+import NotificationBell from './components/NotificationBell.vue';
+import NotificationsIndex from './components/NotificationsIndex.vue';
 import PostsIndex from './components/PostsIndex.vue';
 import ProfileForm from './components/ProfileForm.vue';
 import PasswordSetupForm from './components/PasswordSetupForm.vue';
@@ -28,6 +34,8 @@ import UserForm from './components/UserForm.vue';
 
 const registry = {
     'app-shell': AppShell,
+    'attachments-index': AttachmentsIndex,
+    'attachment-uploader': AttachmentUploader,
     'dict-item-form': DictItemForm,
     'dict-items-index': DictItemsIndex,
     'dict-type-form': DictTypeForm,
@@ -36,6 +44,10 @@ const registry = {
     login: LoginPage,
     'menu-form': MenuForm,
     'menus-index': MenusIndex,
+    'message-composer': MessageComposer,
+    'messages-index': MessagesIndex,
+    'notification-bell': NotificationBell,
+    'notifications-index': NotificationsIndex,
     'posts-index': PostsIndex,
     'profile-form': ProfileForm,
     'password-setup-form': PasswordSetupForm,

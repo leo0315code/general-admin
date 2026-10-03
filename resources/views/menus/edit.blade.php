@@ -1,12 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="编辑节点：{{ $menu->title }}" description="{{ $menu->typeLabel() }} · 权限标识 {{ $menu->permission_name ?? '（未配置）' }}" :back-url="route('menus.index')">
-            <x-slot name="actions">
-                <a href="{{ route('menus.index') }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
-                    返回列表
-                </a>
-            </x-slot>
+        <x-page-header title="编辑节点：{{ $menu->title }}" description="{{ $menu->typeLabel() }} · 权限标识 {{ $menu->permission_name ?? '（未配置）' }}" :back-url="route('menus.index')" :breadcrumbs="[['label' => '菜单管理', 'url' => route('menus.index')], ['label' => '编辑节点']]">
         </x-page-header>
     </x-slot>
 

@@ -1,12 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="用户回收站" description="已删除用户可在此还原或彻底清除" :back-url="route('users.index')">
-            <x-slot name="actions">
-                <a href="{{ route('users.index') }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
-                    返回用户列表
-                </a>
-            </x-slot>
+        <x-page-header title="用户回收站" description="已删除用户可在此还原或彻底清除" :back-url="route('users.index')" back-label="返回用户列表" :breadcrumbs="[['label' => '用户管理', 'url' => route('users.index')], ['label' => '回收站']]">
         </x-page-header>
     </x-slot>
 

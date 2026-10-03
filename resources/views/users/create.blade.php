@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="新建用户" description="创建系统用户并分配角色" />
+        <x-page-header title="新建用户" description="创建系统用户并分配角色" :breadcrumbs="[['label' => '用户管理', 'url' => route('users.index')], ['label' => '新建用户']]" />
     </x-slot>
 
     @php

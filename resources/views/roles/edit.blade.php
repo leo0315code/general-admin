@@ -1,12 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="编辑角色：{{ $role->name }}" description="修改角色信息与权限分配" :back-url="route('roles.index')">
-            <x-slot name="actions">
-                <a href="{{ route('roles.index') }}" class="btn-secondary">
-                    <x-icon name="heroicon-o-arrow-left" class="h-4 w-4" />
-                    返回列表
-                </a>
-            </x-slot>
+        <x-page-header title="编辑角色：{{ $role->name }}" description="修改角色信息与权限分配" :back-url="route('roles.index')" :breadcrumbs="[['label' => '角色管理', 'url' => route('roles.index')], ['label' => '编辑角色']]">
         </x-page-header>
     </x-slot>
 
