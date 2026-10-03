@@ -29,6 +29,7 @@ php artisan key:generate --force
 - [ ] `APP_URL` 与实际域名一致（影响生成链接、密码重置）
 - [ ] 生产只放行 `public/` 目录（nginx root 指向 `public`，禁止访问 `storage/`、`vendor/`、`.env`）
 - [ ] `storage/`、`bootstrap/cache` 目录可写：`php artisan storage:link`（若有公开磁盘）
+- [ ] 反向代理正确传递 `X-Forwarded-For`（`/health/detailed` 的内网判定依赖它；传错会导致合法运维请求被 403）
 
 ## 3. 数据库
 
@@ -71,3 +72,13 @@ php artisan config:cache             # 或 config:route:view 三件套
 - [ ] 确认服务器装有 `mysqldump`（或已在 `.env` 显式指定 `DB_DUMP_BINARY_PATH`）；缺省时会自动探测，失败则告警而非静默产出空备份
 - [ ] cron 已生效：`php artisan schedule:list` 能看到 backup:run / backup:clean / backup:monitor 三条
 - [ ] ⚠️ 目标服务器为 Windows 时此方案不适用（spatie 官方不支持 Windows），需改用其他备份手段
+
+## 8. 健康检查与监控
+
+> 端点说明与检测项见 `docs/health-check.md`。
+
+- [ ] `curl https://域名/health` 返回 200 且 `status=ok`（探活端点不连数据库，可安全高频调用）
+- [ ] `curl https://域名/health/detailed` 7 项检测全部 `ok`；若为 `degraded`/`error`，按 `message` 处理后再上线
+- [ ] 已配置 `HEALTH_TOKEN`（外网运维场景）；仅内网访问则留空即可
+- [ ] 监控系统已接入两个端点（探活 5 秒级 + 深度 10 分钟级），**告警依据是 JSON 里的 `status` 而非 HTTP 状态码**
+- [ ] 确认 `/health/detailed` 对外网返回 403（用外网 IP 或去掉代理头实测一次）
