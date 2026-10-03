@@ -68,6 +68,18 @@ class User extends Authenticatable
         return $this->hasMany(Post::class);
     }
 
+    /** 站内通知（一对多） */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    /** 未读站内通知（顶栏铃铛计数用） */
+    public function unreadNotifications(): HasMany
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
     /** 返回用户角色名列表（Spatie getRoleNames 集合的封装，用于视图/接口展示） */
     public function roleNames(): array
     {
