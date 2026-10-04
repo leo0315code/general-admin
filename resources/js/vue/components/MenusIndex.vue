@@ -2,6 +2,7 @@
 // 菜单管理列表页 —— CRUD 样板推广（Vue 组件化）
 // 树形扁平渲染（深度缩进），无分页；删除/启停复用 AppShell 全局 Vue ConfirmModal
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     rows: { type: Array, default: () => [] },
@@ -93,20 +94,16 @@ function destroyMenu(menu) {
                         <td class="td text-gray-600 dark:text-gray-300">{{ m.route || '—' }}</td>
                         <td class="td text-gray-600 dark:text-gray-300">{{ m.sort }}</td>
                         <td class="td">
-                            <span
+                            <StatusBadge
                                 v-if="m.status"
-                                class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300"
+                                type="success"
+                                icon="heroicon-o-check-circle"
                             >
-                                <Icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
                                 启用
-                            </span>
-                            <span
-                                v-else
-                                class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                            >
-                                <Icon name="heroicon-o-no-symbol" class="h-3.5 w-3.5" />
+                            </StatusBadge>
+                            <StatusBadge v-else type="neutral" icon="heroicon-o-no-symbol">
                                 停用
-                            </span>
+                            </StatusBadge>
                         </td>
                         <td class="td text-right whitespace-nowrap">
                             <div class="inline-flex items-center gap-0.5">

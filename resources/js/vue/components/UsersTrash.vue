@@ -3,6 +3,7 @@
 // 搜索 + 表格渲染 + 还原/彻底删除（确认）；分页 Blade 渲染
 import { ref } from 'vue';
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     keyword: { type: String, default: '' },
@@ -143,9 +144,9 @@ function forceDestroy(u) {
                         <td class="td font-medium text-gray-900 dark:text-gray-100">{{ u.name }}</td>
                         <td class="td text-gray-600 dark:text-gray-300">{{ u.email }}</td>
                         <td class="td">
-                            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                            <StatusBadge type="neutral">
                                 {{ u.roles || '无角色' }}
-                            </span>
+                            </StatusBadge>
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ u.deleted_at }}</td>
                         <td class="td text-right whitespace-nowrap">

@@ -4,6 +4,7 @@
 // 确认类操作复用 AppShell 全局 Vue ConfirmModal（window app:confirm 事件 + 隐藏表单提交）
 import { computed, ref } from 'vue';
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     keyword: { type: String, default: '' },
@@ -250,35 +251,34 @@ function destroyUser(u) {
                         <td class="td text-gray-600 dark:text-gray-300">{{ u.email || '—' }}</td>
                         <td class="td">
                             <div class="flex flex-wrap gap-1.5">
-                                <span
+                                <StatusBadge
                                     v-for="r in u.roles"
                                     :key="r"
-                                    class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2 py-0.5 text-[11px] bg-info-100 text-info-700 dark:bg-info-500/20 dark:text-info-300"
+                                    type="info"
+                                    size="xs"
+                                    :icon="r === 'admin' ? 'heroicon-o-shield-check' : 'heroicon-o-user'"
                                 >
-                                    <Icon :name="r === 'admin' ? 'heroicon-o-shield-check' : 'heroicon-o-user'" class="h-3 w-3" />
                                     {{ r }}
-                                </span>
+                                </StatusBadge>
                                 <span v-if="u.roles.length === 0" class="text-xs text-gray-400 dark:text-gray-500">无角色</span>
                             </div>
                         </td>
                         <td class="td">
                             <div class="flex flex-wrap items-center gap-1.5">
-                                <span
-                                    :class="u.status
-                                        ? 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300'
-                                        : 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300'"
-                                    class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs"
+                                <StatusBadge
+                                    :type="u.status ? 'success' : 'danger'"
+                                    :icon="u.status ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle'"
                                 >
-                                    <Icon :name="u.status ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle'" class="h-3.5 w-3.5" />
                                     {{ u.status ? '启用' : '停用' }}
-                                </span>
-                                <span
+                                </StatusBadge>
+                                <StatusBadge
                                     v-if="u.must_change_password"
-                                    class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2 py-0.5 text-[11px] bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300"
+                                    type="warning"
+                                    size="xs"
                                     title="首次登录需修改密码"
                                 >
                                     待改密
-                                </span>
+                                </StatusBadge>
                             </div>
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">

@@ -2,6 +2,7 @@
 // 字典项列表页 —— CRUD 样板推广（Vue 组件化）
 // 表格 Vue 渲染，分页 Blade 渲染；删除复用 AppShell 全局 Vue ConfirmModal
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     items: { type: Array, default: () => [] },
@@ -117,20 +118,16 @@ function destroyItem(item) {
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300">{{ item.sort }}</td>
                         <td class="td">
-                            <span
+                            <StatusBadge
                                 v-if="item.status"
-                                class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300"
+                                type="success"
+                                icon="heroicon-o-check-circle"
                             >
-                                <Icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
                                 启用
-                            </span>
-                            <span
-                                v-else
-                                class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                            >
-                                <Icon name="heroicon-o-no-symbol" class="h-3.5 w-3.5" />
+                            </StatusBadge>
+                            <StatusBadge v-else type="neutral" icon="heroicon-o-no-symbol">
                                 停用
-                            </span>
+                            </StatusBadge>
                         </td>
                         <td class="td text-gray-500 dark:text-gray-400 max-w-[180px] truncate">{{ item.remark || '—' }}</td>
                         <td class="td text-right whitespace-nowrap">

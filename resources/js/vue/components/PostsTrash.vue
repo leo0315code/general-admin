@@ -3,6 +3,7 @@
 // 搜索 + 状态筛选 + 表格渲染 + 还原/彻底删除（确认）；分页 Blade 渲染
 import { ref } from 'vue';
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     keyword: { type: String, default: '' },
@@ -153,20 +154,16 @@ function forceDestroy(p) {
                         <td class="td font-medium text-gray-900 dark:text-gray-100 max-w-xs truncate">{{ p.title }}</td>
                         <td class="td text-gray-600 dark:text-gray-300">{{ p.author || '—' }}</td>
                         <td class="td">
-                            <span
+                            <StatusBadge
                                 v-if="p.is_published"
-                                class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300"
+                                type="success"
+                                icon="heroicon-o-check-circle"
                             >
-                                <Icon name="heroicon-o-check-circle" class="h-3.5 w-3.5" />
                                 已发布
-                            </span>
-                            <span
-                                v-else
-                                class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2.5 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                            >
-                                <Icon name="heroicon-o-pencil-square" class="h-3.5 w-3.5" />
+                            </StatusBadge>
+                            <StatusBadge v-else type="neutral" icon="heroicon-o-pencil-square">
                                 草稿
-                            </span>
+                            </StatusBadge>
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300 whitespace-nowrap">{{ p.deleted_at }}</td>
                         <td class="td text-right whitespace-nowrap">

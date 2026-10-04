@@ -3,6 +3,7 @@
 // 表格由 Vue 渲染，分页由 Blade 渲染（GET 整页刷新）
 // 删除复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     roles: { type: Array, default: () => [] },
@@ -98,13 +99,14 @@ function destroyRole(role) {
                         <td class="td">
                             <div class="flex items-center gap-2">
                                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ role.name }}</span>
-                                <span
+                                <StatusBadge
                                     v-if="role.is_admin"
-                                    class="inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap px-2 py-0.5 text-[11px] bg-info-100 text-info-700 dark:bg-info-500/20 dark:text-info-300"
+                                    type="info"
+                                    size="xs"
+                                    icon="heroicon-o-star"
                                 >
-                                    <Icon name="heroicon-o-star" class="h-3 w-3" />
                                     超级管理员
-                                </span>
+                                </StatusBadge>
                             </div>
                         </td>
                         <td class="td text-gray-600 dark:text-gray-300">{{ role.description || '—' }}</td>
