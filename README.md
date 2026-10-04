@@ -226,6 +226,9 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 - 统计卡片、数据表格（悬停、状态徽章）、统一表单样式、flash 提示条
 - 图标：blade-heroicons（Heroicons 2.0，`<x-icon name="heroicon-o-*" />`），菜单图标可在「菜单管理」中配置
 - 通用组件类集中在 `resources/css/app.css`（card / btn-* / input / th / td / stat-card）
+- 状态徽章统一走 `<x-status-badge>`（Blade）与 `<StatusBadge>`（Vue，需逐组件 import），两者配色逐项一致，禁止再硬编码
+- 危险操作按钮统一 `.btn-danger-outline`；颜色一律用 @theme 语义 token（primary/success/warning/danger/info），禁止裸色
+- 一致性由 `tests/Feature/BadgeConsistencyTest.php` 回归看护（含「用到的色阶必须在 @theme 登记」——未登记的色阶不会生成工具类，会静默失效）
 
 ## 文章模块 = 业务 CRUD 模板
 
@@ -275,7 +278,7 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 ```bash
 composer install
 npm install && npm run build   # 前端产物（public/build，已 gitignore）
-php artisan test               # 393 passed (1513 assertions)
+php artisan test               # 406 passed (1628 assertions)
 npx vitest run                 # 前端单测 31 passed
 ```
 
