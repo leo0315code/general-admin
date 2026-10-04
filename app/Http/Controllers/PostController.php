@@ -90,11 +90,11 @@ class PostController extends Controller
                 ->withInput();
         }
 
-        Post::query()->create($data);
+        $post = Post::query()->create($data);
 
         return redirect()
             ->route('posts.index')
-            ->with('success', '文章创建成功。');
+            ->with('success', "文章「{$post->title}」创建成功。");
     }
 
     /** 编辑文章表单 */
