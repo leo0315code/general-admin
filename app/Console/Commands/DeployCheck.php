@@ -3,13 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Support\BackupTarget;
+use App\Support\CacheStore;
 use App\Support\DumpBinary;
 use App\Support\HealthCheck;
 use App\Support\WsTicket;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Predis\Client;
 
 /**
  * 上线前自检
@@ -174,6 +174,32 @@ class DeployCheck extends Command
         $this->checkEnvPlaceholders();
         $this->checkBuiltAssets();
         $this->checkConfigCached();
+        $this->checkCacheStore();
+    }
+
+    /**
+     * 缓存承载登录限流与验证码计数：
+     * - array / null 不跨进程共享 → 限流等于没有，必须拦（本地开发常见，故仅生产阻断）；
+     * - redis 但连不上或没有客户端 → 一登录就 500，同样阻断；
+     * - database 能用，只是代价高 → 建议。
+     */
+    private function checkCacheStore(): void
+    {
+        $problem = CacheStore::problem();
+
+        $level = match (true) {
+            $problem === null => self::OK,
+            // database 属于「能用但不推荐」；其余（array/null、redis 不可用）都是硬伤
+            CacheStore::usable() && CacheStore::name() === 'database' => self::WARN,
+            default => self::FAIL,
+        };
+
+        $this->record(
+            '缓存 store',
+            $level,
+            $problem ?? 'store: '.CacheStore::name(),
+            productionOnly: ! CacheStore::usable(),
+        );
     }
 
     /** `.env` 里残留占位符（REPLACE_ME）会导致生产用错配置 */
@@ -281,7 +307,7 @@ class DeployCheck extends Command
         }
 
         // 指定了 redis 却没有客户端实现，票据读写会直接抛异常（phpredis 扩展与 predis 二选一）
-        if (WsTicket::storeName() === 'redis' && ! $this->redisClientAvailable()) {
+        if (WsTicket::storeName() === 'redis' && ! CacheStore::redisClientAvailable()) {
             $this->record(
                 'WS 票据 store',
                 self::FAIL,
@@ -301,11 +327,6 @@ class DeployCheck extends Command
         };
 
         $this->record('WS 票据 store', $level, $problem ?? 'store: '.WsTicket::storeName());
-    }
-
-    private function redisClientAvailable(): bool
-    {
-        return extension_loaded('redis') || class_exists(Client::class);
     }
 
     private function checkFailedJobs(): void

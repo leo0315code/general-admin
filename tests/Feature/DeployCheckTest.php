@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Support\CacheStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
@@ -69,6 +70,69 @@ class DeployCheckTest extends TestCase
         Config::set('app.key', '');
 
         $this->artisan('deploy:check')->assertExitCode(1);
+    }
+
+    /** 缓存落在不跨进程共享的驱动上＝登录限流形同虚设，生产必须阻断 */
+    public function test_unshared_cache_store_is_blocking_in_production(): void
+    {
+        Config::set('app.env', 'production');
+        Config::set('cache.default', 'array');
+
+        $this->assertSame('fail', $this->checkLevel('缓存 store'));
+    }
+
+    /** 本地开发用 array 缓存是常态：降级为建议，不应让命令失败 */
+    public function test_unshared_cache_store_is_downgraded_outside_production(): void
+    {
+        Config::set('app.env', 'local');
+        Config::set('cache.default', 'array');
+
+        $this->assertSame('warn', $this->checkLevel('缓存 store'));
+    }
+
+    /** database 能用但代价高：只建议，不阻断 */
+    public function test_database_cache_store_only_warns(): void
+    {
+        Config::set('app.env', 'production');
+        Config::set('cache.default', 'database');
+
+        $this->assertSame('warn', $this->checkLevel('缓存 store'));
+    }
+
+    /** 缓存走 redis 却连不上：登录页会直接 500，必须阻断 */
+    public function test_unreachable_redis_cache_store_is_blocking(): void
+    {
+        Config::set('cache.default', 'redis');
+        Config::set('database.redis.cache.port', '6399'); // 本机不监听
+        Config::set('database.redis.cache.max_retries', 1);
+
+        $this->assertSame('fail', $this->checkLevel('缓存 store'));
+    }
+
+    /** 真连得上时不该报任何问题；本机 redis 没起就跳过 */
+    public function test_reachable_redis_cache_store_passes(): void
+    {
+        Config::set('cache.default', 'redis');
+
+        if (CacheStore::pingFailure() !== null) {
+            $this->markTestSkipped('本机 redis 不可用，无法验证连通场景');
+        }
+
+        $this->assertSame('ok', $this->checkLevel('缓存 store'));
+    }
+
+    /** 按名字取某一项的等级，避免用退出码间接推断（退出码会被其它项干扰） */
+    private function checkLevel(string $name): string
+    {
+        Artisan::call('deploy:check --json');
+
+        foreach (json_decode(Artisan::output(), true)['checks'] as $check) {
+            if ($check['name'] === $name) {
+                return (string) $check['level'];
+            }
+        }
+
+        $this->fail('未找到检查项：'.$name);
     }
 
     /** 票据落在不跨进程共享的驱动上＝WS 全站连不上，必须阻断 */
