@@ -11,13 +11,13 @@ use App\Imports\UsersImport;
 use App\Models\Notification;
 use App\Models\User;
 use App\Notifications\AccountCredentials;
+use App\Support\BulkAction;
 use App\Support\ListQuery;
 use App\Support\Notifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -282,27 +282,11 @@ class UserController extends Controller
     {
         Gate::authorize('users.destroy');
 
-        $deleted = 0;
-        $skipped = 0;
-
-        DB::transaction(function () use ($request, &$deleted, &$skipped) {
-            foreach ($this->validatedIds($request) as $id) {
-                $user = User::query()->find($id);
-
-                if (! $user) {
-                    continue;
-                }
-
-                if ($user->is(auth()->user()) || $this->isLastActiveAdmin($user)) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                $user->delete();
-                $deleted++;
-            }
-        });
+        ['done' => $deleted, 'skipped' => $skipped] = (new BulkAction($request))->run(
+            fn (int $id) => User::query()->find($id),
+            fn (User $user) => $user->is(auth()->user()) || $this->isLastActiveAdmin($user),
+            fn (User $user) => $user->delete(),
+        );
 
         $message = "已删除 {$deleted} 个用户。";
 
@@ -318,33 +302,12 @@ class UserController extends Controller
     {
         Gate::authorize('users.update');
 
-        $changed = 0;
-        $skipped = 0;
-
-        DB::transaction(function () use ($request, &$changed, &$skipped) {
-            foreach ($this->validatedIds($request) as $id) {
-                $user = User::query()->find($id);
-
-                if (! $user) {
-                    continue;
-                }
-
-                if ($user->is(auth()->user())) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                if ($user->isActive() && $this->isLastActiveAdmin($user)) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                $user->update(['status' => ! $user->isActive()]);
-                $changed++;
-            }
-        });
+        ['done' => $changed, 'skipped' => $skipped] = (new BulkAction($request))->run(
+            fn (int $id) => User::query()->find($id),
+            fn (User $user) => $user->is(auth()->user())
+                || ($user->isActive() && $this->isLastActiveAdmin($user)),
+            fn (User $user) => $user->update(['status' => ! $user->isActive()]),
+        );
 
         $message = "已更新 {$changed} 个用户的状态。";
 
@@ -353,27 +316,6 @@ class UserController extends Controller
         }
 
         return back()->with('success', $message);
-    }
-
-    /**
-     * 批量操作 ID 白名单清洗：仅保留正整数，去重。
-     *
-     * @return list<int>
-     */
-    protected function validatedIds(Request $request): array
-    {
-        $ids = $request->input('ids', []);
-
-        if (! is_array($ids)) {
-            return [];
-        }
-
-        return collect($ids)
-            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
     }
 
     /** 回收站：已删除用户列表（分页 + 搜索 + 每页条数/排序） */

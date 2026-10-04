@@ -8,12 +8,12 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Attachment;
 use App\Models\Post;
+use App\Support\BulkAction;
 use App\Support\ListQuery;
 use App\Support\Uploader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -202,27 +202,11 @@ class PostController extends Controller
         // 随后逐 id 复用 delete 策略（admin 或作者本人）
         Gate::authorize('posts.destroy');
 
-        $deleted = 0;
-        $skipped = 0;
-
-        DB::transaction(function () use ($request, &$deleted, &$skipped) {
-            foreach ($this->validatedIds($request) as $id) {
-                $post = Post::query()->find($id);
-
-                if (! $post) {
-                    continue;
-                }
-
-                if (! $request->user()->can('delete', $post)) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                $post->delete();
-                $deleted++;
-            }
-        });
+        ['done' => $deleted, 'skipped' => $skipped] = (new BulkAction($request))->run(
+            fn (int $id) => Post::query()->find($id),
+            fn (Post $post) => ! $request->user()->can('delete', $post),
+            fn (Post $post) => $post->delete(),
+        );
 
         $message = "已删除 {$deleted} 篇文章。";
 
@@ -231,27 +215,6 @@ class PostController extends Controller
         }
 
         return back()->with('success', $message);
-    }
-
-    /**
-     * 批量操作 ID 白名单清洗：仅保留正整数，去重。
-     *
-     * @return list<int>
-     */
-    protected function validatedIds(Request $request): array
-    {
-        $ids = $request->input('ids', []);
-
-        if (! is_array($ids)) {
-            return [];
-        }
-
-        return collect($ids)
-            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
     }
 
     /** 还原软删除文章 */
