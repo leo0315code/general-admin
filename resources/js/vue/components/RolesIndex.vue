@@ -2,6 +2,8 @@
 // 角色管理列表页 —— CRUD 样板推广（Vue 组件化）
 // 表格由 Vue 渲染，分页由 Blade 渲染（GET 整页刷新）
 // 删除复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
+import { useConfirmAction } from '../composables/useConfirmAction.js';
+import { useSortable } from '../composables/useSortable.js';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -16,6 +18,9 @@ const props = defineProps({
     can: { type: Object, default: () => ({}) },
 });
 
+const { confirmAction } = useConfirmAction();
+const { sortUrl, sortIcon } = useSortable(props);
+
 const columns = [
     { key: 'id', label: 'ID', sortable: true },
     { key: 'name', label: '角色', sortable: true },
@@ -24,39 +29,6 @@ const columns = [
     { key: null, label: '用户数' },
     { key: null, label: '操作', align: 'right' },
 ];
-
-function sortUrl(key) {
-    const q = new URLSearchParams();
-    for (const [k, v] of Object.entries(props.query)) {
-        if (k === 'sort' || k === 'sort_dir' || k === 'page') continue;
-        if (v !== undefined && v !== null && v !== '') q.append(k, v);
-    }
-    q.set('sort', key);
-    q.set('sort_dir', props.sort === key && props.sortDir === 'asc' ? 'desc' : 'asc');
-    q.set('page', '1');
-    return `${props.currentUrl}?${q.toString()}`;
-}
-
-function sortIcon(key) {
-    if (props.sort === key) return props.sortDir === 'asc' ? 'heroicon-o-chevron-up' : 'heroicon-o-chevron-down';
-    return 'heroicon-o-chevron-up-down';
-}
-
-// 确认操作：构造隐藏表单 → AppShell 全局 Vue ConfirmModal
-function confirmAction({ action, method, title, message, variant = 'danger' }) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = action;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
-    if (method && method !== 'POST') {
-        form.innerHTML += `<input type="hidden" name="_method" value="${method}">`;
-    }
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', { detail: { form, title, message, variant } })
-    );
-}
 
 function destroyRole(role) {
     confirmAction({

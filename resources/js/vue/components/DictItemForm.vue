@@ -2,6 +2,7 @@
 // 字典项创建/编辑表单 —— 表单页 Vue 化推广
 // 原生 POST 提交 + 服务端错误回显 + v-model
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -26,35 +27,17 @@ function fieldError(field) {
     return props.errors[field] || [];
 }
 
-function hiddenInput(name, value) {
-    const el = document.createElement('input');
-    el.type = 'hidden';
-    el.name = name;
-    el.value = value;
-    return el;
-}
+const { confirmAction } = useConfirmAction();
 
 function confirmDestroy() {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = props.destroyUrl;
-    // 用 DOM API 组装隐藏字段，避免字符串拼接带来的注入面
-    form.appendChild(hiddenInput('_token', token));
-    form.appendChild(hiddenInput('_method', 'DELETE'));
-    if (props.redirectTo) {
-        form.appendChild(hiddenInput('redirect_to', props.redirectTo));
-    }
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: `确定要删除字典项「${label.value}」吗？`,
-                message: '删除后该字典项将无法恢复。',
-            },
-        })
-    );
+    confirmAction({
+        action: props.destroyUrl,
+        method: 'DELETE',
+        // 提交/删除后回跳来源页（空则回列表页）
+        fields: props.redirectTo ? { redirect_to: props.redirectTo } : {},
+        title: `确定要删除字典项「${label.value}」吗？`,
+        message: '删除后该字典项将无法恢复。',
+    });
 }
 </script>
 

@@ -1,6 +1,7 @@
 <script setup>
 // 附件列表 —— 搜索（Blade 刷新）/ 下载 / 删除
 // 删除复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -10,35 +11,15 @@ const props = defineProps({
     base: { type: String, default: '/console/attachments' },
 });
 
+const { confirmAction } = useConfirmAction();
+
 function confirmDestroy(item) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `${props.base}/${item.id}`;
-
-    // DOM API 组装隐藏字段，不做字符串拼接（避免文件名里的引号破坏 HTML）
-    const add = (name, value) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-    };
-
-    add('_token', token);
-    add('_method', 'DELETE');
-    document.body.appendChild(form);
-
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: '确定删除这个附件吗？',
-                message: `「${item.name}」删除后文件将一并移除，无法恢复。`,
-                variant: 'danger',
-            },
-        })
-    );
+    confirmAction({
+        action: `${props.base}/${item.id}`,
+        method: 'DELETE',
+        title: '确定删除这个附件吗？',
+        message: `「${item.name}」删除后文件将一并移除，无法恢复。`,
+    });
 }
 </script>
 

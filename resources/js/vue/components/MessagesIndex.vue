@@ -1,40 +1,22 @@
 <script setup>
 // 发送历史 —— 谁发的、发给谁范围、多少人、是否撤回
 // 撤回复用 AppShell 全局 ConfirmModal（app:confirm 事件 + 隐藏表单提交），与其它列表页一致
+import { useConfirmAction } from '../composables/useConfirmAction.js';
+
+const { confirmAction } = useConfirmAction();
+
 const props = defineProps({
     broadcasts: { type: Array, default: () => [] },
     can: { type: Object, default: () => ({}) },
 });
 
-/** 删除同理：用 DOM API 组装隐藏表单，不做字符串拼接 */
 function confirmRevoke(item) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = item.revoke_url;
-
-    const add = (name, value) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-    };
-
-    add('_token', token);
-    add('_method', 'DELETE');
-    document.body.appendChild(form);
-
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: '确定撤回这条消息吗？',
-                message: `「${item.title}」将从 ${item.recipients_count} 位用户的收件箱中移除，无法恢复。`,
-                variant: 'danger',
-            },
-        })
-    );
+    confirmAction({
+        action: item.revoke_url,
+        method: 'DELETE',
+        title: '确定撤回这条消息吗？',
+        message: `「${item.title}」将从 ${item.recipients_count} 位用户的收件箱中移除，无法恢复。`,
+    });
 }
 </script>
 

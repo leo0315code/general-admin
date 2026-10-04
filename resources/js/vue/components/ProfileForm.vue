@@ -3,6 +3,7 @@
 // 全部原生表单提交（PATCH / PUT / DELETE），错误来自服务端 error bag
 // 注销账号需输入当前密码：Vue 内联弹窗（不依赖 Alpine x-modal）
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -18,6 +19,8 @@ const props = defineProps({
     // session status：profile-updated / password-updated / verification-link-sent
     status: { type: String, default: '' },
 });
+
+const { submitHiddenForm } = useConfirmAction();
 
 const name = ref(props.user.name ?? '');
 const email = ref(props.user.email ?? '');
@@ -54,16 +57,14 @@ function closeDeleteModal() {
 }
 
 function submitDelete() {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = props.destroyUrl;
-    form.innerHTML =
-        `<input type="hidden" name="_token" value="${props.csrf}">` +
-        `<input type="hidden" name="_method" value="DELETE">` +
-        `<input type="hidden" name="password" value="${deletePassword.value.replace(/"/g, '&quot;')}">`;
-    document.body.appendChild(form);
+    // 密码已在内联弹窗里核过，无需再走全局 ConfirmModal
+    submitHiddenForm({
+        action: props.destroyUrl,
+        method: 'DELETE',
+        csrf: props.csrf,
+        fields: { password: deletePassword.value },
+    });
     closeDeleteModal();
-    form.submit();
 }
 </script>
 

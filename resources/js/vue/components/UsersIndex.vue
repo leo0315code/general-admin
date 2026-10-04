@@ -3,6 +3,8 @@
 // Blade 端 data-vue-app 挂载；表格由 Vue 渲染，分页由 Blade 渲染（GET 整页刷新）
 // 确认类操作复用 AppShell 全局 Vue ConfirmModal（window app:confirm 事件 + 隐藏表单提交）
 import { computed, ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
+import { useSortable } from '../composables/useSortable.js';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -19,6 +21,9 @@ const props = defineProps({
     canDestroy: { type: Boolean, default: false }, // users.destroy：删除
     routes: { type: Object, default: () => ({}) },
 });
+
+const { confirmAction } = useConfirmAction();
+const { sortUrl, sortIcon } = useSortable(props);
 
 const search = ref(props.keyword || '');
 const selectedIds = ref([]);
@@ -51,23 +56,6 @@ function clearSearch() {
     window.location.href = props.currentUrl;
 }
 
-function sortUrl(key) {
-    const q = new URLSearchParams();
-    for (const [k, v] of Object.entries(props.query)) {
-        if (k === 'sort' || k === 'sort_dir' || k === 'page') continue;
-        if (v !== undefined && v !== null && v !== '') q.append(k, v);
-    }
-    q.set('sort', key);
-    q.set('sort_dir', props.sort === key && props.sortDir === 'asc' ? 'desc' : 'asc');
-    q.set('page', '1');
-    return `${props.currentUrl}?${q.toString()}`;
-}
-
-function sortIcon(key) {
-    if (props.sort === key) return props.sortDir === 'asc' ? 'heroicon-o-chevron-up' : 'heroicon-o-chevron-down';
-    return 'heroicon-o-chevron-up-down';
-}
-
 const columns = [
     { key: 'id', label: 'ID', sortable: true },
     { key: 'name', label: '姓名', sortable: true },
@@ -83,34 +71,11 @@ function initial(name) {
     return name ? name.charAt(0).toUpperCase() : '?';
 }
 
-// 确认操作：构造隐藏表单 → AppShell 全局 Vue ConfirmModal
-function confirmAction({ action, method, extra, title, message, variant = 'danger' }) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = action;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
-    if (method && method !== 'POST') {
-        form.innerHTML += `<input type="hidden" name="_method" value="${method}">`;
-    }
-    for (const [k, v] of Object.entries(extra || {})) {
-        if (Array.isArray(v)) {
-            v.forEach((val) => (form.innerHTML += `<input type="hidden" name="${k}[]" value="${val}">`));
-        } else {
-            form.innerHTML += `<input type="hidden" name="${k}" value="${v}">`;
-        }
-    }
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', { detail: { form, title, message, variant } })
-    );
-}
-
 function bulkDelete() {
     confirmAction({
         action: props.routes.bulk_delete,
         method: 'POST',
-        extra: { ids: selectedIds.value },
+        fields: { ids: selectedIds.value },
         title: '确定删除选中的用户吗？',
         message: '删除后将进入回收站（软删除），可在回收站中还原。',
     });
@@ -120,7 +85,7 @@ function bulkToggle() {
     confirmAction({
         action: props.routes.bulk_toggle,
         method: 'POST',
-        extra: { ids: selectedIds.value },
+        fields: { ids: selectedIds.value },
         title: '确定启停选中的用户吗？',
         message: '停用的用户将无法登录。',
         variant: 'primary',
@@ -131,7 +96,6 @@ function toggleStatus(u) {
     confirmAction({
         action: `${props.userBase}/${u.id}/toggle-status`,
         method: 'PATCH',
-        extra: {},
         title: `确定要${u.status ? '停用' : '启用'}用户「${u.name}」吗？`,
         message: u.status ? '停用后该用户将无法登录。' : '启用后该用户可正常登录。',
     });
@@ -141,7 +105,6 @@ function destroyUser(u) {
     confirmAction({
         action: `${props.userBase}/${u.id}`,
         method: 'DELETE',
-        extra: {},
         title: `确定要删除用户「${u.name}」吗？`,
         message: '删除后将无法登录（软删除，可在回收站中还原）。',
     });

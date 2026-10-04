@@ -2,6 +2,8 @@
 // 用户回收站 —— Vue 组件化
 // 搜索 + 表格渲染 + 还原/彻底删除（确认）；分页 Blade 渲染
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
+import { useSortable } from '../composables/useSortable.js';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -14,6 +16,9 @@ const props = defineProps({
     query: { type: Object, default: () => ({}) },
     userBase: { type: String, default: '' }, // /console/users（restore/force-delete 基于此）
 });
+
+const { confirmAction } = useConfirmAction();
+const { sortUrl, sortIcon } = useSortable(props);
 
 const search = ref(props.keyword || '');
 
@@ -31,23 +36,6 @@ function clearSearch() {
     window.location.href = props.currentUrl;
 }
 
-function sortUrl(key) {
-    const q = new URLSearchParams();
-    for (const [k, v] of Object.entries(props.query)) {
-        if (k === 'sort' || k === 'sort_dir' || k === 'page') continue;
-        if (v !== undefined && v !== null && v !== '') q.append(k, v);
-    }
-    q.set('sort', key);
-    q.set('sort_dir', props.sort === key && props.sortDir === 'asc' ? 'desc' : 'asc');
-    q.set('page', '1');
-    return `${props.currentUrl}?${q.toString()}`;
-}
-
-function sortIcon(key) {
-    if (props.sort === key) return props.sortDir === 'asc' ? 'heroicon-o-chevron-up' : 'heroicon-o-chevron-down';
-    return 'heroicon-o-chevron-up-down';
-}
-
 const columns = [
     { key: 'id', label: 'ID', sortable: true },
     { key: 'name', label: '姓名', sortable: true },
@@ -56,21 +44,6 @@ const columns = [
     { key: 'created_at', label: '删除时间', sortable: true },
     { key: null, label: '操作', align: 'right' },
 ];
-
-function confirmAction({ action, method, title, message, variant = 'danger' }) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = action;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
-    if (method && method !== 'POST') {
-        form.innerHTML += `<input type="hidden" name="_method" value="${method}">`;
-    }
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', { detail: { form, title, message, variant } })
-    );
-}
 
 function restoreUser(u) {
     confirmAction({

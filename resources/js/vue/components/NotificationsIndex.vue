@@ -1,6 +1,7 @@
 <script setup>
 // 通知中心列表 —— 未读高亮、标记已读、删除
 // 写操作复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -16,50 +17,23 @@ const TYPE_LABELS = {
     'users.imported': '用户导入',
 };
 
+const { confirmAction, submitHiddenForm } = useConfirmAction();
+
 function typeLabel(type) {
     return TYPE_LABELS[type] || '系统消息';
 }
 
-/**
- * 组装隐藏表单提交（DOM API，不做字符串拼接，避免 HTML 注入）
- * confirm 为空则直接提交；否则交给全局 ConfirmModal 二次确认。
- */
-function submit(method, action, confirm = null) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = action;
-
-    const add = (name, value) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-    };
-
-    add('_token', token);
-    if (method !== 'POST') {
-        add('_method', method);
-    }
-    document.body.appendChild(form);
-
-    if (confirm) {
-        window.dispatchEvent(new CustomEvent('app:confirm', { detail: { form, ...confirm } }));
-    } else {
-        form.submit();
-    }
-}
-
 function markRead(item) {
-    submit('PATCH', `${props.base}/${item.id}/read`);
+    // 标记已读无需二次确认
+    submitHiddenForm({ action: `${props.base}/${item.id}/read`, method: 'PATCH' });
 }
 
 function destroy(item) {
-    submit('DELETE', `${props.base}/${item.id}`, {
+    confirmAction({
+        action: `${props.base}/${item.id}`,
+        method: 'DELETE',
         title: '确定删除这条通知吗？',
         message: item.title,
-        variant: 'danger',
     });
 }
 </script>

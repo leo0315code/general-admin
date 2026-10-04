@@ -3,6 +3,8 @@
 // 搜索 + 状态筛选 + 勾选/批量删除 + 排序表头 + 行内发布/下线/删除
 // 确认类操作复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
 import { computed, ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
+import { useSortable } from '../composables/useSortable.js';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -19,6 +21,9 @@ const props = defineProps({
     // 服务端按钮级权限：无权限时隐藏对应操作，避免「看得见点了 403」
     can: { type: Object, default: () => ({}) },
 });
+
+const { confirmAction } = useConfirmAction();
+const { sortUrl, sortIcon } = useSortable(props);
 
 const search = ref(props.keyword || '');
 const filterStatus = ref(props.status || '');
@@ -56,23 +61,6 @@ function clearFilter() {
     window.location.href = props.currentUrl;
 }
 
-function sortUrl(key) {
-    const q = new URLSearchParams();
-    for (const [k, v] of Object.entries(props.query)) {
-        if (k === 'sort' || k === 'sort_dir' || k === 'page') continue;
-        if (v !== undefined && v !== null && v !== '') q.append(k, v);
-    }
-    q.set('sort', key);
-    q.set('sort_dir', props.sort === key && props.sortDir === 'asc' ? 'desc' : 'asc');
-    q.set('page', '1');
-    return `${props.currentUrl}?${q.toString()}`;
-}
-
-function sortIcon(key) {
-    if (props.sort === key) return props.sortDir === 'asc' ? 'heroicon-o-chevron-up' : 'heroicon-o-chevron-down';
-    return 'heroicon-o-chevron-up-down';
-}
-
 const columns = [
     { key: 'id', label: 'ID', sortable: true },
     { key: null, label: '封面' },
@@ -83,34 +71,11 @@ const columns = [
     { key: null, label: '操作', align: 'right' },
 ];
 
-// 确认操作：构造隐藏表单 → AppShell 全局 Vue ConfirmModal
-function confirmAction({ action, method, extra, title, message, variant = 'danger' }) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = action;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
-    if (method && method !== 'POST') {
-        form.innerHTML += `<input type="hidden" name="_method" value="${method}">`;
-    }
-    for (const [k, v] of Object.entries(extra || {})) {
-        if (Array.isArray(v)) {
-            v.forEach((val) => (form.innerHTML += `<input type="hidden" name="${k}[]" value="${val}">`));
-        } else {
-            form.innerHTML += `<input type="hidden" name="${k}" value="${v}">`;
-        }
-    }
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', { detail: { form, title, message, variant } })
-    );
-}
-
 function bulkDelete() {
     confirmAction({
         action: props.routes.bulk_delete,
         method: 'POST',
-        extra: { ids: selectedIds.value },
+        fields: { ids: selectedIds.value },
         title: '确定删除选中的文章吗？',
         message: '删除后将进入回收站（软删除），可在回收站中还原。',
     });
@@ -120,7 +85,6 @@ function togglePublish(p) {
     confirmAction({
         action: `${props.postBase}/${p.id}/toggle-status`,
         method: 'PATCH',
-        extra: {},
         title: p.is_published ? `确定要下线文章「${p.title}」吗？` : `确定要发布文章「${p.title}」吗？`,
         message: p.is_published ? '下线后文章将转为草稿，不再对外展示。' : '发布后文章将对读者可见。',
         variant: 'primary',
@@ -131,7 +95,6 @@ function destroyPost(p) {
     confirmAction({
         action: `${props.postBase}/${p.id}`,
         method: 'DELETE',
-        extra: {},
         title: `确定要删除文章「${p.title}」吗？`,
         message: '删除后将进入回收站（软删除），可在回收站中还原。',
     });

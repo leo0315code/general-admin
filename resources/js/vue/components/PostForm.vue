@@ -3,6 +3,7 @@
 // 原生 POST 提交 + 服务端错误回显 + v-model
 // 封面：内联上传到附件基座（落 attachments 表），提交时带 hidden cover_attachment_id
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -28,6 +29,8 @@ const coverId = ref(props.old.cover_attachment_id ?? null);
 const coverUrl = ref(props.old.cover_preview_url ?? '');
 const coverInput = ref(null);
 const coverUploading = ref(false);
+
+const { confirmAction } = useConfirmAction();
 
 function fieldError(field) {
     return props.errors[field] || [];
@@ -80,21 +83,12 @@ function removeCover() {
 }
 
 function confirmDestroy() {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = props.destroyUrl;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}"><input type="hidden" name="_method" value="DELETE">`;
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: `确定要删除文章「${title.value}」吗？`,
-                message: '删除后将进入回收站（软删除），可在回收站中还原。',
-            },
-        })
-    );
+    confirmAction({
+        action: props.destroyUrl,
+        method: 'DELETE',
+        title: `确定要删除文章「${title.value}」吗？`,
+        message: '删除后将进入回收站（软删除），可在回收站中还原。',
+    });
 }
 </script>
 

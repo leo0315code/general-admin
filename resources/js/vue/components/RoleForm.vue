@@ -2,6 +2,7 @@
 // 角色创建/编辑表单 —— 表单页 Vue 化
 // 权限树按菜单扁平渲染（缩进），支持全选/全选本组；admin 角色标识只读、无删除
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 import { usePermissionSelection } from '../composables/usePermissionSelection.js';
 
@@ -34,26 +35,19 @@ function typeBadge(type) {
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300';
 }
 
+const { confirmAction } = useConfirmAction();
+
 function fieldError(field) {
     return props.errors[field] || [];
 }
 
 function confirmDestroy() {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = props.destroyUrl;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}"><input type="hidden" name="_method" value="DELETE">`;
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: `确定要删除角色「${name.value}」吗？`,
-                message: '删除后该角色及其权限分配将一并移除。',
-            },
-        })
-    );
+    confirmAction({
+        action: props.destroyUrl,
+        method: 'DELETE',
+        title: `确定要删除角色「${name.value}」吗？`,
+        message: '删除后该角色及其权限分配将一并移除。',
+    });
 }
 </script>
 

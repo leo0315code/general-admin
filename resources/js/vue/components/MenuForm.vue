@@ -2,6 +2,7 @@
 // 菜单/权限节点创建编辑表单 —— 表单页 Vue 化
 // 原生 POST 提交 + 错误回显 + v-model；父级树/类型/路由+图标 datalist 建议
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -29,26 +30,19 @@ const sort = ref(props.old.sort ?? 0);
 const status = ref(props.old.status === false ? false : true);
 const remark = ref(props.old.remark ?? '');
 
+const { confirmAction } = useConfirmAction();
+
 function fieldError(field) {
     return props.errors[field] || [];
 }
 
 function confirmDestroy() {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = props.destroyUrl;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}"><input type="hidden" name="_method" value="DELETE">`;
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: `确定要删除「${title.value}」吗？`,
-                message: '对应权限记录将一并清理。',
-            },
-        })
-    );
+    confirmAction({
+        action: props.destroyUrl,
+        method: 'DELETE',
+        title: `确定要删除「${title.value}」吗？`,
+        message: '对应权限记录将一并清理。',
+    });
 }
 </script>
 

@@ -2,6 +2,7 @@
 // 操作日志列表页 —— CRUD 样板推广（Vue 组件化，只读表格）
 // 筛选栏（搜索/操作类型/日期）+ 排序表头，表格 Vue 渲染，分页 Blade 渲染
 import { ref } from 'vue';
+import { useSortable } from '../composables/useSortable.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -23,6 +24,8 @@ function detailHref(log) {
     return props.detailUrl ? props.detailUrl.replace('__ID__', String(log.id)) : '#';
 }
 
+const { sortUrl, sortIcon } = useSortable(props);
+
 const search = ref(props.keyword || '');
 const filterAction = ref(props.action || '');
 const filterDate = ref(props.date || '');
@@ -41,23 +44,6 @@ function submitFilter() {
 
 function clearFilter() {
     window.location.href = props.currentUrl;
-}
-
-function sortUrl(key) {
-    const q = new URLSearchParams();
-    for (const [k, v] of Object.entries(props.query)) {
-        if (k === 'sort' || k === 'sort_dir' || k === 'page') continue;
-        if (v !== undefined && v !== null && v !== '') q.append(k, v);
-    }
-    q.set('sort', key);
-    q.set('sort_dir', props.sort === key && props.sortDir === 'asc' ? 'desc' : 'asc');
-    q.set('page', '1');
-    return `${props.currentUrl}?${q.toString()}`;
-}
-
-function sortIcon(key) {
-    if (props.sort === key) return props.sortDir === 'asc' ? 'heroicon-o-chevron-up' : 'heroicon-o-chevron-down';
-    return 'heroicon-o-chevron-up-down';
 }
 
 const columns = [

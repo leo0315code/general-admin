@@ -1,6 +1,7 @@
 <script setup>
 // 菜单管理列表页 —— CRUD 样板推广（Vue 组件化）
 // 树形扁平渲染（深度缩进），无分页；删除/启停复用 AppShell 全局 Vue ConfirmModal
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -10,26 +11,12 @@ const props = defineProps({
     can: { type: Object, default: () => ({ create: false, update: false, destroy: false }) },
 });
 
+const { confirmAction } = useConfirmAction();
+
 function typeBadge(type) {
     if (type === 'dir') return 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300';
     if (type === 'button') return 'bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300';
     return 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300';
-}
-
-// 确认操作：构造隐藏表单 → AppShell 全局 Vue ConfirmModal
-function confirmAction({ action, method, title, message, variant = 'danger' }) {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = action;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}">`;
-    if (method && method !== 'POST') {
-        form.innerHTML += `<input type="hidden" name="_method" value="${method}">`;
-    }
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', { detail: { form, title, message, variant } })
-    );
 }
 
 function toggleStatus(menu) {

@@ -2,6 +2,7 @@
 // 字典类型创建/编辑表单 —— 表单页 Vue 化推广
 // 原生 POST 提交 + 服务端错误回显 + v-model
 import { ref } from 'vue';
+import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -39,6 +40,8 @@ function removeItemRow(index) {
     itemRows.value.splice(index, 1);
 }
 
+const { confirmAction } = useConfirmAction();
+
 function fieldError(field) {
     return props.errors[field] || [];
 }
@@ -48,21 +51,12 @@ function itemError(index, field) {
 }
 
 function confirmDestroy() {
-    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = props.destroyUrl;
-    form.innerHTML = `<input type="hidden" name="_token" value="${token}"><input type="hidden" name="_method" value="DELETE">`;
-    document.body.appendChild(form);
-    window.dispatchEvent(
-        new CustomEvent('app:confirm', {
-            detail: {
-                form,
-                title: `确定要删除类型「${name.value}」及其全部字典项吗？`,
-                message: '该类型下的所有字典项将一并删除，此操作不可恢复。',
-            },
-        })
-    );
+    confirmAction({
+        action: props.destroyUrl,
+        method: 'DELETE',
+        title: `确定要删除类型「${name.value}」及其全部字典项吗？`,
+        message: '该类型下的所有字典项将一并删除，此操作不可恢复。',
+    });
 }
 </script>
 
