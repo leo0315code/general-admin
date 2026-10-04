@@ -25,6 +25,7 @@ WS_REGISTER_ADDRESS="127.0.0.1:1236"
 WS_LISTEN="0.0.0.0:2346"
 WS_WORKER_COUNT=2
 WS_TICKET_TTL=60
+WS_TICKET_STORE=redis      # 票据存哪，见下节「票据存储」
 ```
 
 浏览器连的地址**不用配**：默认由 `APP_URL` 推导——`https://域名` → `wss://域名/ws`、`http://域名` → `ws://域名/ws`，端口沿用（如 `http://localhost:8000` → `ws://localhost:8000/ws`）。生产配好 Nginx 的 `/ws` 反代即可，见下节。
@@ -80,14 +81,32 @@ autorestart=true
 
 | 点 | 做法 |
 |---|---|
-| 身份识别 | WS 握手拿不到主站会话 Cookie → 登录用户先换**一次性票据**（60 秒有效），Worker 侧 `Cache::pull` 消费即失效，防重放 |
+| 身份识别 | WS 握手拿不到主站会话 Cookie → 登录用户先换**一次性票据**（60 秒有效），Worker 侧原子消费，防重放（见下节） |
 | 票据格式 | 只接受 20–80 位字母数字，非法值直接拒绝并断开 |
 | 未绑定不推送 | 未完成 auth 的连接不会 bindUid，收不到任何消息 |
 | 故障隔离 | Register 不可达只记日志返回 `false`；通知照样落库（有回归测试守着） |
 | 数据为准 | 推送只当「有新消息」的信号，客户端收到后仍会拉一次未读数接口校正，推送丢包不会导致计数失真 |
 
+## 票据存储
+
+票据由 **php-fpm 进程签发、常驻 Worker 进程消费**，两者内存不互通，所以唯一硬性要求是**跨进程共享**。用 `WS_TICKET_STORE` 指定，留空跟随 `CACHE_STORE`。
+
+| 驱动 | 结论 |
+|---|---|
+| `redis` | **推荐**：原生 TTL、无常驻长连接断开问题、支持多机部署（需 phpredis 扩展或 predis 包） |
+| `file` | 单机可用，依赖共享磁盘，多机不行 |
+| `database` | 能用但代价最高：每次建连一次 INSERT+DELETE 写放大，且常驻 Worker 持有 MySQL 长连接会被 `wait_timeout` 静默断开 |
+| `array` / `null` | **不可用**：Worker 永远读不到票据，表现是「连上就断」且很难排查 |
+
+`php artisan deploy:check` 会检查这一项：不共享的驱动**阻断**，database 降级为建议，指定 redis 却没有客户端实现也阻断。Worker 启动时同样会写一条 error 日志。
+
+### 为什么不用 Cache::pull
+
+一次性语义不用 `Cache::pull()` 实现。它的源码是 `tap(get(), fn => forget())`——**两条独立命令，且全部驱动（含 RedisStore、DatabaseStore）都没有覆写它**，并发下两个连接能拿到同一个 uid，「消费即失效」并不成立。
+
+改用 `Cache::add()` 抢占位键：各驱动都以「只允许一个赢」的语义实现（Redis 走 Lua、database 靠 key 唯一索引的 `insertOrIgnore`、file 用 flock、memcached 用原生 add），抢不到的一律视为已兑现。取不到值的票据直接返回 null 且不写任何键，避免拿随机串反复请求把缓存灌满。
+
 ## 注意事项
 
-- **cache 驱动建议 redis/file**：Worker 进程常驻，若用 database 驱动长时间运行可能遇到连接断开；票据只走缓存，不碰数据库。
 - 端口：`1236`（Register，内部）、`2346`（Gateway，对外）、`2300+`（Gateway↔BusinessWorker 内部通信），防火墙只放开对外那一个。
 - 水平扩展：多台服务器时所有 Gateway/BusinessWorker 指向同一个 `WS_REGISTER_ADDRESS` 即可。
