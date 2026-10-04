@@ -230,6 +230,21 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 - 危险操作按钮统一 `.btn-danger-outline`；颜色一律用 @theme 语义 token（primary/success/warning/danger/info），禁止裸色
 - 一致性由 `tests/Feature/BadgeConsistencyTest.php` 回归看护（含「用到的色阶必须在 @theme 登记」——未登记的色阶不会生成工具类，会静默失效）
 
+## 前端复用层
+
+列表页的重复逻辑已收进 `resources/js/vue/composables/`，新增页面请直接复用，不要再抄：
+
+| 模块 | 用途 | 收敛前 |
+| --- | --- | --- |
+| `useConfirmAction.js` | 建隐藏表单并派发 `app:confirm`（或 `submitHiddenForm` 直接提交） | 17 处各写一份 |
+| `useSortable.js` | 服务端排序表头的 `sortUrl` / `sortIcon` | 8 处逐字符重复 |
+| `usePermissionSelection.js` / `useRoleSelection.js` | 权限树 / 角色多选 | — |
+| `EmptyState.vue` | 表格空状态行（colspan + icon + 文案 slot） | 10 处各写一份 |
+| `StatusBadge.vue` / `MenuTypeBadge.vue` | 状态徽章、菜单类型徽章 | — |
+
+破坏性操作一律走 `useConfirmAction`，它用 DOM API 赋值隐藏字段（不做 HTML 字符串拼接）。
+批量写操作的骨架在 `app/Support/BulkAction.php`（事务 + 逐条策略跳过 + done/skipped 计数）。
+
 ## 文章模块 = 业务 CRUD 模板
 
 `Post`（文章）是示例 CRUD 模板：列表（分页+关键字搜索+状态筛选）、创建、编辑（含**封面上传**）、删除（软删除）、状态切换、**回收站（还原/彻底删除）**、导出（跟随筛选）。
@@ -278,8 +293,8 @@ dict('post_status', 'no-such', '未知'); // 带默认值：'未知'
 ```bash
 composer install
 npm install && npm run build   # 前端产物（public/build，已 gitignore）
-php artisan test               # 406 passed (1628 assertions)
-npx vitest run                 # 前端单测 31 passed
+php artisan test               # 413 passed (1642 assertions)
+npm run test:unit              # 前端单测 45 passed（脚本名是 test:unit，不是 test）
 ```
 
 覆盖：认证（Breeze 默认）、**账号生命周期（启停拦截登录、登录痕迹、首登强制改密全流程）**、仪表盘、用户管理、**用户导入（中文表头、重名/软删查重、角色与密码校验、失败行不中断、随机密码）**、角色管理、菜单管理（菜单即权限：权限自动同步 / 删除保护 / 改名清理）、文章管理（**封面接入附件** / **LIKE 通配符转义**）、**数据字典读取 dict()（缓存与失效）**、**附件上传与清理**、**通知中心与三档群发**、**WebSocket 推送与票据**、**操作日志审计（GET 导出留痕 / 保留天数 / 详情页）**、**回收站全链路（软删 → 回收站 → 还原 → 彻底删除）**、**中文错误页（403/404/419/429/500）**、**导出跟随筛选（FromQuery 流式）**、**安全收口（PostPolicy 数据范围、最后一个 admin 保护、按钮级权限服务端校验）**、**种子数据完整性（幂等、权限与菜单双向一致、后台页面可渲染）**、**健康检查端点（七项自检、内网放行、公网 403、备份新鲜度）**、**CORS 白名单**、**备份目标降级策略**、**mysqldump 路径自动探测**、RBAC 权限控制（含 QA 冒烟：直接 POST 越权拦截、侧边栏与页面可达性同源、权限保存端到端生效）。
