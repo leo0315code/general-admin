@@ -182,7 +182,7 @@ function confirmDestroy() {
             <button
                 v-if="mode === 'edit' && canDestroy"
                 type="button"
-                class="btn-danger-ghost border border-red-200 dark:border-red-500/30 rounded-lg px-4 py-2"
+                class="btn-danger-outline"
                 @click="confirmDestroy"
             >
                 <Icon name="heroicon-o-trash" class="h-4 w-4" />

@@ -108,8 +108,8 @@
 
             @can('users.destroy')
                 @unless ($user->is(auth()->user()))
-                    <div class="card border-red-200 dark:border-red-500/30">
-                        <div class="card-header flex items-center gap-2 border-red-100 dark:border-red-500/20">
+                    <div class="card border-danger-500/30 dark:border-danger-500/40">
+                        <div class="card-header flex items-center gap-2 border-danger-100 dark:border-danger-500/20">
                             <x-icon name="heroicon-o-exclamation-triangle" class="h-5 w-5 text-danger-500" />
                             <h3 class="text-base font-semibold text-danger-600 dark:text-danger-400">危险操作</h3>
                         </div>
@@ -120,7 +120,7 @@
                                   data-confirm-message="删除后将无法登录（软删除，可在数据库中恢复）。">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-danger-ghost w-full justify-center border border-red-200 dark:border-red-500/30 rounded-lg py-2"
+                                <button type="submit" class="btn-danger-outline w-full justify-center"
                                         @click.prevent="window.__ui.confirmModal.open($el.closest('form'))">
                                     <x-icon name="heroicon-o-trash" class="h-4 w-4" />
                                     删除用户

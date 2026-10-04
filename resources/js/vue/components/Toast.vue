@@ -42,7 +42,7 @@ defineExpose({ show });
             >
                 <Icon
                     :name="toast.type === 'error' ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle'"
-                    :class="toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'"
+                    :class="toast.type === 'error' ? 'text-danger-500' : 'text-success-500'"
                     class="h-5 w-5 shrink-0 mt-0.5"
                 />
                 <p class="text-sm font-medium flex-1 leading-relaxed">{{ toast.message }}</p>

@@ -44,9 +44,9 @@
 
     {{-- 导入失败明细 --}}
     @if (session('import_errors'))
-        <div class="mb-4 rounded-xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-4">
-            <p class="text-sm font-medium text-red-700 dark:text-red-300 mb-2">以下行未导入成功：</p>
-            <ul class="list-disc list-inside space-y-0.5 text-xs text-red-600 dark:text-red-400 max-h-40 overflow-y-auto">
+        <div class="mb-4 rounded-xl border border-danger-500/30 bg-danger-50 dark:bg-danger-500/10 p-4">
+            <p class="text-sm font-medium text-danger-700 dark:text-danger-400 mb-2">以下行未导入成功：</p>
+            <ul class="list-disc list-inside space-y-0.5 text-xs text-danger-600 dark:text-danger-400 max-h-40 overflow-y-auto">
                 @foreach (session('import_errors') as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -54,12 +54,12 @@
             @if (session('import_errors_token'))
                 <a
                     href="{{ route('users.import-errors', session('import_errors_token')) }}"
-                    class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-700 border border-red-300 dark:border-red-500/50 hover:bg-red-50 dark:hover:bg-gray-600 text-xs font-medium text-red-700 dark:text-red-300 rounded-lg transition"
+                    class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-700 border border-danger-500/50 hover:bg-danger-50 dark:hover:bg-gray-600 text-xs font-medium text-danger-700 dark:text-danger-400 rounded-lg transition"
                 >
                     <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
                     下载失败明细（xlsx）
                 </a>
-                <p class="mt-1.5 text-xs text-red-500 dark:text-red-400/70">明细链接 10 分钟内有效，可下载后修正再重传。</p>
+                <p class="mt-1.5 text-xs text-danger-500 dark:text-danger-400/70">明细链接 10 分钟内有效，可下载后修正再重传。</p>
             @endif
         </div>
     @endif
