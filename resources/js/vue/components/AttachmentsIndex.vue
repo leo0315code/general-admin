@@ -2,6 +2,7 @@
 // 附件列表 —— 搜索（Blade 刷新）/ 下载 / 删除
 // 删除复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
 import { useConfirmAction } from '../composables/useConfirmAction.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -100,12 +101,9 @@ function confirmDestroy(item) {
                     </tr>
 
                     <tr v-if="attachments.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-paper-clip" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">
-                                {{ keyword ? '没有匹配的附件' : '还没有上传任何附件' }}
-                            </p>
-                        </td>
+                        <EmptyState :colspan="6" icon="heroicon-o-paper-clip">
+                            {{ keyword ? '没有匹配的附件' : '还没有上传任何附件' }}
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

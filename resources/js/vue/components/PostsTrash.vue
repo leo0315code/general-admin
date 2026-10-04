@@ -4,6 +4,7 @@
 import { ref } from 'vue';
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import { useSortable } from '../composables/useSortable.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -164,10 +165,9 @@ function forceDestroy(p) {
                     </tr>
 
                     <tr v-if="posts.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-document-text" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">回收站是空的</p>
-                        </td>
+                        <EmptyState :colspan="6" icon="heroicon-o-document-text">
+                            回收站是空的
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

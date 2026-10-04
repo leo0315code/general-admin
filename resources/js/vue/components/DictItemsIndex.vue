@@ -3,6 +3,7 @@
 // 表格 Vue 渲染，分页 Blade 渲染；删除复用 AppShell 全局 Vue ConfirmModal
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import { useSortable } from '../composables/useSortable.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -117,10 +118,9 @@ function destroyItem(item) {
                     </tr>
 
                     <tr v-if="items.length === 0">
-                        <td colspan="7" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-list-bullet" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">该类型下暂无字典项</p>
-                        </td>
+                        <EmptyState :colspan="7" icon="heroicon-o-list-bullet">
+                            该类型下暂无字典项
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

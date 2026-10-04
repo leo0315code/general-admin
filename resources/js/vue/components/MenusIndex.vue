@@ -2,7 +2,9 @@
 // 菜单管理列表页 —— CRUD 样板推广（Vue 组件化）
 // 树形扁平渲染（深度缩进），无分页；删除/启停复用 AppShell 全局 Vue ConfirmModal
 import { useConfirmAction } from '../composables/useConfirmAction.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
+import MenuTypeBadge from './MenuTypeBadge.vue';
 import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
@@ -12,12 +14,6 @@ const props = defineProps({
 });
 
 const { confirmAction } = useConfirmAction();
-
-function typeBadge(type) {
-    if (type === 'dir') return 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300';
-    if (type === 'button') return 'bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300';
-    return 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300';
-}
 
 function toggleStatus(menu) {
     confirmAction({
@@ -61,12 +57,7 @@ function destroyMenu(menu) {
                                 <span v-if="m.depth > 0" class="text-gray-300 dark:text-gray-600 select-none">└</span>
                                 <Icon v-if="m.icon" :name="m.icon" class="h-4 w-4 text-gray-400 dark:text-gray-500" />
                                 <span class="font-medium text-gray-900 dark:text-gray-100">{{ m.title }}</span>
-                                <span
-                                    :class="typeBadge(m.type)"
-                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium"
-                                >
-                                    {{ m.type_label }}
-                                </span>
+                                <MenuTypeBadge :type="m.type" :label="m.type_label" />
                             </div>
                         </td>
                         <td class="td">
@@ -135,10 +126,9 @@ function destroyMenu(menu) {
                     </tr>
 
                     <tr v-if="rows.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-rectangle-stack" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">还没有任何菜单节点</p>
-                        </td>
+                        <EmptyState :colspan="6" icon="heroicon-o-rectangle-stack">
+                            还没有任何菜单节点
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

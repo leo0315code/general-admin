@@ -4,6 +4,7 @@
 // 删除复用 AppShell 全局 Vue ConfirmModal（app:confirm 事件 + 隐藏表单提交）
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import { useSortable } from '../composables/useSortable.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -113,10 +114,9 @@ function destroyRole(role) {
                     </tr>
 
                     <tr v-if="roles.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-shield-check" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">暂无角色</p>
-                        </td>
+                        <EmptyState :colspan="6" icon="heroicon-o-shield-check">
+                            暂无角色
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

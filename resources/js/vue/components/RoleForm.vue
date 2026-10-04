@@ -4,6 +4,7 @@
 import { ref } from 'vue';
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
+import MenuTypeBadge from './MenuTypeBadge.vue';
 import { usePermissionSelection } from '../composables/usePermissionSelection.js';
 
 const props = defineProps({
@@ -28,12 +29,6 @@ const { selected, togglePermission, toggleGroup, groupChecked, toggleAll, isChec
     props.old.permissions ?? [],
     props.permissionRows
 );
-
-function typeBadge(type) {
-    if (type === 'dir') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300';
-    if (type === 'button') return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300';
-    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300';
-}
 
 const { confirmAction } = useConfirmAction();
 
@@ -135,9 +130,7 @@ function confirmDestroy() {
                         <span class="text-sm" :class="row.depth === 0 ? 'font-semibold' : 'text-gray-700 dark:text-gray-200'">
                             {{ row.title }}
                         </span>
-                        <span :class="typeBadge(row.type)" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium">
-                            {{ row.type_label }}
-                        </span>
+                        <MenuTypeBadge :type="row.type" :label="row.type_label" />
                         <code v-if="row.permission_name" class="text-xs font-mono text-gray-400 dark:text-gray-500">{{ row.permission_name }}</code>
                         <span v-if="!row.status" class="text-[11px] text-gray-400 dark:text-gray-500">（已停用）</span>
 

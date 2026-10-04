@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue';
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import { useSortable } from '../composables/useSortable.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -287,10 +288,9 @@ function destroyUser(u) {
                     </tr>
 
                     <tr v-if="users.length === 0">
-                        <td colspan="9" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-user" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">没有找到用户</p>
-                        </td>
+                        <EmptyState :colspan="9" icon="heroicon-o-user">
+                            没有找到用户
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

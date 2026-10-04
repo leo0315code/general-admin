@@ -16,8 +16,8 @@ use Tests\TestCase;
  */
 class BadgeConsistencyTest extends TestCase
 {
-    /** 五种语义色的配色串（Blade 端为基准） */
-    private const TYPES = ['success', 'warning', 'danger', 'info', 'neutral'];
+    /** 六种语义色的配色串（Blade 端为基准） */
+    private const TYPES = ['primary', 'success', 'warning', 'danger', 'info', 'neutral'];
 
     /** Vue 组件里不得再出现硬编码的状态徽章配色 */
     public function test_vue_components_do_not_hardcode_badge_styles(): void
@@ -49,6 +49,32 @@ class BadgeConsistencyTest extends TestCase
             [],
             $offenders,
             '以下位置仍在硬编码状态徽章配色，请改用 <StatusBadge>：'.implode(', ', $offenders)
+        );
+    }
+
+    /** 不得再有 typeBadge() 这类「函数返回配色串」的写法（上一轮按同行 rounded-full 漏判过） */
+    public function test_no_function_level_badge_palette(): void
+    {
+        $offenders = [];
+
+        foreach (File::allFiles(resource_path('js/vue/components')) as $file) {
+            if ($file->getFilename() === 'StatusBadge.vue') {
+                continue;
+            }
+
+            foreach (File::lines($file->getRealPath()) as $number => $line) {
+                // 形如：if (type === 'dir') return 'bg-primary-100 text-primary-700 ...';
+                if (preg_match("/return\s*'bg-(primary|success|warning|danger|info)-100/", $line)) {
+                    $offenders[] = $file->getFilename().':'.($number + 1);
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            '以下位置用函数返回硬编码徽章配色（模板里加 rounded-full 也抓不到），请改用 StatusBadge / MenuTypeBadge：'
+            .implode(', ', $offenders)
         );
     }
 

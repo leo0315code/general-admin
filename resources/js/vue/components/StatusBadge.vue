@@ -2,6 +2,7 @@
 // 状态徽章（与 Blade 的 <x-status-badge> 同配色、同 API）
 // 统一「已发布/草稿、启用/停用」这类状态标签的样式，避免在各列表页重复硬编码。
 // 用法：<StatusBadge type="success" icon="heroicon-o-check-circle">已发布</StatusBadge>
+// type: primary | success | warning | danger | info | neutral
 import Icon from './Icon.vue';
 
 defineProps({
@@ -13,6 +14,7 @@ defineProps({
 });
 
 const styles = {
+    primary: 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300',
     success: 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300',
     warning: 'bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300',
     danger: 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300',

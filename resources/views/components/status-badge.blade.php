@@ -1,11 +1,12 @@
 @props([
-    'type' => 'neutral', // success | warning | danger | info | neutral
+    'type' => 'neutral', // primary | success | warning | danger | info | neutral
     'icon' => null,
     'size' => 'sm', // sm | xs
 ])
 
 @php
     $styles = [
+        'primary' => 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300',
         'success' => 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300',
         'warning' => 'bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300',
         'danger' => 'bg-danger-100 text-danger-700 dark:bg-danger-500/20 dark:text-danger-300',

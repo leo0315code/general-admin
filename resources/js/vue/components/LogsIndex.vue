@@ -3,6 +3,7 @@
 // 筛选栏（搜索/操作类型/日期）+ 排序表头，表格 Vue 渲染，分页 Blade 渲染
 import { ref } from 'vue';
 import { useSortable } from '../composables/useSortable.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 
 const props = defineProps({
@@ -178,10 +179,9 @@ function initial(name) {
                     </tr>
 
                     <tr v-if="logs.length === 0">
-                        <td colspan="7" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-clipboard-document-list" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">暂无操作日志</p>
-                        </td>
+                        <EmptyState :colspan="7" icon="heroicon-o-clipboard-document-list">
+                            暂无操作日志
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>

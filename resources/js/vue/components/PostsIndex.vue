@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue';
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import { useSortable } from '../composables/useSortable.js';
+import EmptyState from './EmptyState.vue';
 import Icon from './Icon.vue';
 import StatusBadge from './StatusBadge.vue';
 
@@ -256,10 +257,9 @@ function destroyPost(p) {
                     </tr>
 
                     <tr v-if="posts.length === 0">
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <Icon name="heroicon-o-document-text" class="h-10 w-10 mx-auto text-gray-300 dark:text-gray-600" />
-                            <p class="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">没有找到文章</p>
-                        </td>
+                        <EmptyState :colspan="8" icon="heroicon-o-document-text">
+                            没有找到文章
+                        </EmptyState>
                     </tr>
                 </tbody>
             </table>
