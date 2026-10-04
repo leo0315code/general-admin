@@ -5,9 +5,11 @@ namespace App\Console\Commands;
 use App\Support\BackupTarget;
 use App\Support\DumpBinary;
 use App\Support\HealthCheck;
+use App\Support\WsTicket;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Predis\Client;
 
 /**
  * 上线前自检
@@ -263,6 +265,47 @@ class DeployCheck extends Command
 
         $this->checkFailedJobs();
         $this->checkCors();
+        $this->checkWebSocketTicket();
+    }
+
+    /**
+     * WS 票据必须落在跨进程共享的介质上：php-fpm 签发、常驻 Worker 消费，
+     * array / null 驱动下票据永远兑不出来，现象是「连上就断」却查不到原因。
+     */
+    private function checkWebSocketTicket(): void
+    {
+        if (! (bool) config('websocket.enabled')) {
+            $this->record('WS 票据 store', self::OK, '未启用 WS（WS_ENABLED=false），票据不参与');
+
+            return;
+        }
+
+        // 指定了 redis 却没有客户端实现，票据读写会直接抛异常（phpredis 扩展与 predis 二选一）
+        if (WsTicket::storeName() === 'redis' && ! $this->redisClientAvailable()) {
+            $this->record(
+                'WS 票据 store',
+                self::FAIL,
+                '票据 store 为 redis，但 PHP 既没有 phpredis 扩展也没有 predis 包；票据读写会抛异常，WS 全站不可用',
+            );
+
+            return;
+        }
+
+        $problem = WsTicket::problem();
+
+        $level = match (true) {
+            $problem === null => self::OK,
+            // database 能用，只是代价高；array/null 是根本不能用，必须阻断
+            WsTicket::usable() => self::WARN,
+            default => self::FAIL,
+        };
+
+        $this->record('WS 票据 store', $level, $problem ?? 'store: '.WsTicket::storeName());
+    }
+
+    private function redisClientAvailable(): bool
+    {
+        return extension_loaded('redis') || class_exists(Client::class);
     }
 
     private function checkFailedJobs(): void

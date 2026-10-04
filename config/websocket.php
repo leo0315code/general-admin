@@ -68,4 +68,20 @@ return [
     |
     */
     'ticket_ttl' => (int) env('WS_TICKET_TTL', 60),
+
+    /*
+     * 票据存放在哪个 cache store。
+     *
+     * 留空则跟随 CACHE_STORE。但票据必须落在**跨进程共享**的介质上：
+     * 它由 php-fpm 进程签发、由 GatewayWorker 的常驻 Worker 进程消费，两者内存不互通。
+     *
+     *   redis      ← 推荐：原生 TTL、无长连接断开问题、支持多机部署
+     *   file       ← 单机可用（依赖共享磁盘，多机不行）
+     *   database   ← 能跑但代价最高：每次建连一次 INSERT+DELETE 写放大，
+     *                且常驻 Worker 持有 MySQL 长连接，会被 wait_timeout 静默断开
+     *   array/null ← 不可用，Worker 永远读不到票据（deploy:check 会阻断）
+     *
+     * 显式指定可以把它和主业务缓存隔开，避免整体切驱动时被牵连。
+     */
+    'ticket_store' => env('WS_TICKET_STORE'),
 ];
