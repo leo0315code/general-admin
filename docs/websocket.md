@@ -89,7 +89,7 @@ autorestart=true
 
 ## 票据存储
 
-票据由 **php-fpm 进程签发、常驻 Worker 进程消费**，两者内存不互通，所以唯一硬性要求是**跨进程共享**。用 `WS_TICKET_STORE` 指定，留空跟随 `CACHE_STORE`。
+票据由 **php-fpm 进程签发、常驻 Worker 进程消费**，两者内存不互通，所以唯一硬性要求是**跨进程共享**。用 `WS_TICKET_STORE` 指定，留空跟随 `CACHE_STORE`（生产模板已置 `CACHE_STORE=redis`，跟随即为 redis）。
 
 | 驱动 | 结论 |
 |---|---|

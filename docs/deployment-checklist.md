@@ -19,7 +19,7 @@ php artisan deploy:check --strict     # 建议级也算失败（CI 用）
 php artisan deploy:check --json       # JSON 输出，便于流水线解析
 ```
 
-覆盖：环境配置（`APP_ENV/APP_DEBUG/APP_KEY/SESSION_ENCRYPT/SESSION_SECURE_COOKIE`、`.env` 残留占位符、前端产物、配置缓存）、**运行时七项（复用 `HealthCheck`，与 `/health/detailed` 完全同源）**、运维项（mysqldump、异地备份、失败任务、CORS 通配）。
+覆盖：环境配置（`APP_ENV/APP_DEBUG/APP_KEY/SESSION_ENCRYPT/SESSION_SECURE_COOKIE`、`.env` 残留占位符、前端产物、配置缓存、**缓存 store**）、**运行时七项（复用 `HealthCheck`，与 `/health/detailed` 完全同源）**、运维项（mysqldump、异地备份、失败任务、CORS 通配、WS 票据 store）。
 **存在阻断项时退出码非 0**，可直接作为上线卡点。
 
 > 「仅在生产才要求」的项（如 `APP_DEBUG=false`）在非生产环境会自动降级为建议——避免本地开发跑一次满屏 FAIL 反而没人看。
@@ -58,7 +58,9 @@ php artisan config:cache             # 或 config:route:view 三件套
 
 ## 4. 缓存与限流（依赖 CACHE_STORE）
 
-- [ ] 当前 `CACHE_STORE=database`（默认）。登录限流（`RateLimiter`）与验证码计数都走缓存——**生产建议 Redis**：`CACHE_STORE=redis` + `REDIS_*` 配置；无 Redis 时 database 也可用，但高频限流会给 DB 加压
+- [ ] 生产 `CACHE_STORE=redis`（`.env.production.example` 默认值）。登录限流（`RateLimiter`）与验证码计数都走缓存，用 database 也能跑，但每次限流计数一次 INSERT+UPDATE，高频登录会给 DB 加压，且过期行不会自动清理、`cache` 表只增不减
+- [ ] `REDIS_PASSWORD` 填真实密码（无密码的 redis 保持字面量 `null`）。**注意缓存走 `cache` 连接（默认 DB 1）而非 `default`（DB 0）**，两边密码取自同一组 `REDIS_*`，配错的表现是「限流时好时坏」
+- [ ] `php artisan deploy:check` 中「缓存 store」一项为通过：array/null（限流形同虚设）、redis 连不上或无客户端（登录 500）都会阻断
 - [ ] Session driver 已是 `database`，可保持；高并发再评估 redis
 
 ## 5. 上线后验证

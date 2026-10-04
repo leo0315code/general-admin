@@ -18,9 +18,10 @@ Artisan::command('inspire', function () {
 |   * * * * * cd /path/to/general-admin && php artisan schedule:run >> /dev/null 2>&1
 |
 | - model:prune    清理已过保留期的数据（操作日志保留 90 天，见 OperationLog）
-| - 过期缓存清理    database 驱动的 cache 表不会自动删除过期行，需定期物理清理
+| - 备份 / 清理 / 监控  见下方 backup:* 与 attachments:prune
 |
-| 注意：缓存清理仅在 CACHE_STORE=database 时必要；如改用 redis 可删除该调度项。
+| 缓存无需清理任务：生产 CACHE_STORE=redis，过期键由 redis 按 TTL 自行淘汰。
+| 只有改回 database 驱动时才需要补清理——那个驱动不会自动删除过期行，cache 表只增不减。
 */
 
 Schedule::command('model:prune')->dailyAt('03:00');
