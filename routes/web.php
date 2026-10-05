@@ -170,6 +170,12 @@ Route::prefix($adminPrefix)->middleware(['auth', 'verified', 'password.changed']
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // 登录设备（仅本人可见，无需菜单权限）
+    Route::delete('/profile/sessions/others', [ProfileController::class, 'destroyOtherSessions'])
+        ->name('profile.sessions.destroy-others');
+    Route::delete('/profile/sessions/{session}', [ProfileController::class, 'destroySession'])
+        ->name('profile.sessions.destroy');
 });
 
 require __DIR__.'/auth.php';
