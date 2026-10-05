@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\Sessions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -44,6 +45,9 @@ class PasswordSetupController extends Controller
             'password' => Hash::make($request->string('password')),
             'must_change_password' => false,
         ]);
+
+        // 改密即踢掉其它设备：旧会话继续有效等于改密形同虚设
+        Sessions::invalidateOthers($request->user()->id, $request->session()->getId());
 
         return redirect()
             ->route('dashboard')

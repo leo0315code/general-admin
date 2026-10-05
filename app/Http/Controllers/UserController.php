@@ -14,6 +14,7 @@ use App\Notifications\AccountCredentials;
 use App\Support\BulkAction;
 use App\Support\ListQuery;
 use App\Support\Notifier;
+use App\Support\Sessions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -167,6 +168,10 @@ class UserController extends Controller
             // 管理员重置密码后，用户下次登录需先改密
             'must_change_password' => true,
         ]);
+
+        // 管理员重置密码后，被重置者的全部旧会话一并踢掉（含管理员的 recaller 无关，
+        // 这里踢的是 $user 的会话，不是操作者自己的）
+        Sessions::invalidateAll($user->id);
 
         // 重置密码：告知新密码（失败不影响重置结果）
         $this->notifyCredentials($user, (string) $request->input('new_password'), 'reset');
