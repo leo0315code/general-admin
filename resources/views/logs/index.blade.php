@@ -4,7 +4,7 @@
             <x-slot name="actions">
                 @can('log.export')
                     <a
-                        href="{{ route('logs.export', array_filter(request()->only(['search', 'action', 'date']))) }}"
+                        href="{{ route('logs.export', array_filter(request()->only(['search', 'action', 'date', 'scope']))) }}"
                         class="btn-secondary"
                     >
                         <x-icon name="heroicon-o-arrow-down-tray" class="h-4 w-4" />
@@ -23,6 +23,7 @@
             'keyword' => $keyword ?? '',
             'action' => $action ?? '',
             'date' => $date ?? '',
+            'scope' => $scope ?? 'all',
             'actionOptions' => $actionOptions ?? [],
             'logs' => $logs->map(fn ($log) => [
                 'id' => $log->id,
@@ -40,6 +41,21 @@
             'detailUrl' => route('logs.show', ['log' => '__ID__']),
         ];
     @endphp
+
+    {{-- 范围 Tab：全部日志 / 只看登录记录（不增菜单/权限，挂在同一页） --}}
+    <div class="mb-4 flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1 w-fit">
+        @php
+            $tabBase = ['search' => $keyword, 'action' => $action, 'date' => $date];
+        @endphp
+        <a
+            href="{{ route('logs.index', array_filter($tabBase)) }}"
+            class="px-4 py-1.5 text-sm font-medium rounded-md transition {{ $scope === 'all' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' }}"
+        >全部日志</a>
+        <a
+            href="{{ route('logs.index', array_filter(array_merge($tabBase, ['scope' => 'login']))) }}"
+            class="px-4 py-1.5 text-sm font-medium rounded-md transition {{ $scope === 'login' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200' }}"
+        >登录记录</a>
+    </div>
 
     <div class="card">
         {{-- 筛选栏 + 日志表格（Vue 组件 LogsIndex） --}}

@@ -21,6 +21,7 @@ class LogsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
         protected string $keyword = '',
         protected ?string $action = null,
         protected ?string $date = null,
+        protected string $scope = 'all',
     ) {
         //
     }
@@ -33,6 +34,7 @@ class LogsExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
     public function query(): Builder
     {
         return OperationLog::query()
+            ->when($this->scope === 'login', fn (Builder $query) => $query->where('module', '登录'))
             ->when($this->keyword !== '', function (Builder $query) {
                 $query->where(function (Builder $query) {
                     $query->whereRaw("username LIKE ? ESCAPE '!'", ['%'.escape_like($this->keyword).'%'])

@@ -10,6 +10,7 @@ const props = defineProps({
     keyword: { type: String, default: '' },
     action: { type: String, default: '' },
     date: { type: String, default: '' },
+    scope: { type: String, default: 'all' },
     actionOptions: { type: Array, default: () => [] },
     logs: { type: Array, default: () => [] },
     sort: { type: String, default: 'id' },
@@ -36,6 +37,7 @@ function buildQuery() {
     if (search.value.trim()) q.set('search', search.value.trim());
     if (filterAction.value) q.set('action', filterAction.value);
     if (filterDate.value) q.set('date', filterDate.value);
+    if (props.scope === 'login') q.set('scope', 'login');
     return q;
 }
 

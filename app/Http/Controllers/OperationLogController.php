@@ -23,6 +23,8 @@ class OperationLogController extends Controller
         $keyword = trim((string) $request->query('search'));
         $action = $request->query('action');
         $date = $request->query('date');
+        // 登录记录 Tab：scope=login 只看 module='登录' 的审计行
+        $scope = $request->query('scope') === 'login' ? 'login' : 'all';
 
         [$perPage, $sort, $dir] = ListQuery::resolve(
             $request,
@@ -30,6 +32,7 @@ class OperationLogController extends Controller
         );
 
         $logs = OperationLog::query()
+            ->when($scope === 'login', fn ($query) => $query->where('module', '登录'))
             ->when($keyword !== '', function ($query) use ($keyword) {
                 $query->where(function ($query) use ($keyword) {
                     $query->whereRaw("username LIKE ? ESCAPE '!'", ['%'.escape_like($keyword).'%'])
@@ -55,7 +58,7 @@ class OperationLogController extends Controller
             ->pluck('action')
             ->all();
 
-        return view('logs.index', compact('logs', 'keyword', 'action', 'date', 'actionOptions', 'sort', 'dir'));
+        return view('logs.index', compact('logs', 'keyword', 'action', 'date', 'actionOptions', 'sort', 'dir', 'scope'));
     }
 
     /** 日志详情（展示 User-Agent 等列表页未展示的审计字段） */
@@ -72,10 +75,11 @@ class OperationLogController extends Controller
         $keyword = trim((string) $request->query('search'));
         $action = $request->query('action');
         $date = $request->query('date');
+        $scope = $request->query('scope') === 'login' ? 'login' : 'all';
 
         return Excel::download(
-            new LogsExport($keyword, $action, $date),
-            '操作日志-'.date('YmdHis').'.xlsx'
+            new LogsExport($keyword, $action, $date, $scope),
+            ($scope === 'login' ? '登录记录-' : '操作日志-').date('YmdHis').'.xlsx'
         );
     }
 }
