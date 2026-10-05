@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="系统设置" description="配置站点名称、分页大小与版权信息" :breadcrumbs="[['label' => '系统设置']]" />
+        <x-page-header title="系统设置" description="配置站点名称、分页大小与版权信息" />
     </x-slot>
 
     <x-flash-messages />

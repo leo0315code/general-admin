@@ -51,6 +51,39 @@ class BreadcrumbTest extends TestCase
         $this->assertStringNotContainsString('aria-label="面包屑"', $html);
     }
 
+    /**
+     * 一级列表页不显示面包屑：顶部大标题已经写了页面名，再挂一条「首页 / 同名」
+     * 只是重复，且与同级页面不一致（面包屑只用于新建 / 编辑 / 详情这类子页面）。
+     */
+    public function test_index_pages_render_no_breadcrumb(): void
+    {
+        $routes = [
+            'users.index',
+            'roles.index',
+            'menus.index',
+            'dict-types.index',
+            'posts.index',
+            'logs.index',
+            'messages.index',
+            'notifications.index',
+            'attachments.index',
+            'settings.index',
+        ];
+
+        foreach ($routes as $name) {
+            $html = (string) $this->actingAs($this->admin())
+                ->get(route($name))
+                ->assertOk()
+                ->getContent();
+
+            $this->assertStringNotContainsString(
+                'aria-label="面包屑"',
+                $html,
+                $name.' 是列表页，不应渲染面包屑',
+            );
+        }
+    }
+
     public function test_log_detail_shows_parent_link(): void
     {
         $log = OperationLog::query()->create([

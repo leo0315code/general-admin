@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="附件管理" description="文件存于私有磁盘，下载需鉴权；类型与体积双重白名单" :breadcrumbs="[['label' => '附件管理']]">
+        <x-page-header title="附件管理" description="文件存于私有磁盘，下载需鉴权；类型与体积双重白名单">
             <x-slot name="actions">
                 <span class="text-xs text-gray-500 dark:text-gray-400">
                     单文件上限 {{ number_format($maxSizeKb / 1024, 1) }} MB
