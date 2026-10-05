@@ -5,6 +5,7 @@
 import { ref } from 'vue';
 import { useConfirmAction } from '../composables/useConfirmAction.js';
 import Icon from './Icon.vue';
+import StatusBadge from './StatusBadge.vue';
 
 const props = defineProps({
     csrf: { type: String, default: '' },
@@ -14,13 +15,18 @@ const props = defineProps({
     passwordUrl: { type: String, default: '' },
     destroyUrl: { type: String, default: '' },
     verificationUrl: { type: String, default: '' },
+    // 登录设备（仅本人可见）
+    sessions: { type: Array, default: () => [] },
+    sessionsSupported: { type: Boolean, default: false },
+    sessionsDestroyUrl: { type: String, default: '' },
+    sessionsDestroyOthersUrl: { type: String, default: '' },
     // { default: {}, updatePassword: {}, userDeletion: {} }
     errors: { type: Object, default: () => ({}) },
     // session status：profile-updated / password-updated / verification-link-sent
     status: { type: String, default: '' },
 });
 
-const { submitHiddenForm } = useConfirmAction();
+const { confirmAction, submitHiddenForm } = useConfirmAction();
 
 const name = ref(props.user.name ?? '');
 const email = ref(props.user.email ?? '');
@@ -65,6 +71,30 @@ function submitDelete() {
         fields: { password: deletePassword.value },
     });
     closeDeleteModal();
+}
+
+/** 踢掉某一条登录设备 */
+function kickSession(session) {
+    confirmAction({
+        action: props.sessionsDestroyUrl.replace('__ID__', session.id),
+        method: 'DELETE',
+        csrf: props.csrf,
+        title: '确定让这台设备下线吗？',
+        message: `「${session.browser} · ${session.platform}（${session.ip}）」将立即被登出，下次访问需重新登录。`,
+        variant: 'danger',
+    });
+}
+
+/** 踢掉其它全部登录设备，保留当前这条 */
+function kickOthers() {
+    confirmAction({
+        action: props.sessionsDestroyOthersUrl,
+        method: 'DELETE',
+        csrf: props.csrf,
+        title: '确定踢掉其它全部设备吗？',
+        message: '除当前设备外，其它所有登录会话都将立即失效，下次访问需重新登录。',
+        variant: 'danger',
+    });
 }
 </script>
 
@@ -209,7 +239,77 @@ function submitDelete() {
             </form>
         </div>
 
-        <!-- ③ 注销账号 -->
+        <!-- ③ 登录设备 -->
+        <div class="card">
+            <div class="card-header flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">登录设备</h3>
+                    <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                        当前账号的全部在线会话；踢掉后该设备立即被登出。
+                    </p>
+                </div>
+                <button
+                    v-if="sessionsSupported && sessions.some(s => !s.is_current)"
+                    type="button"
+                    class="btn-secondary"
+                    @click="kickOthers"
+                >
+                    <Icon name="heroicon-o-arrow-right-on-rectangle" class="h-4 w-4" />
+                    踢掉其它全部
+                </button>
+            </div>
+
+            <div class="p-6">
+                <p v-if="!sessionsSupported" class="text-sm text-gray-500 dark:text-gray-400">
+                    当前会话驱动非 database（{{ '' }}），登录设备列表不可用。
+                </p>
+                <p v-else-if="sessions.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
+                    暂无在线会话。
+                </p>
+
+                <ul v-else class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <li
+                        v-for="s in sessions"
+                        :key="s.id"
+                        class="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span
+                                class="inline-flex items-center justify-center h-9 w-9 rounded-lg shrink-0"
+                                :class="s.is_current
+                                    ? 'bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400'
+                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'"
+                            >
+                                <Icon name="heroicon-o-computer-desktop" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                    {{ s.browser }} · {{ s.platform }}
+                                    <StatusBadge v-if="s.is_current" type="success" size="xs" icon="heroicon-o-check-circle">
+                                        当前设备
+                                    </StatusBadge>
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ s.ip }} · 最后活动 {{ s.last_activity_human }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            v-if="!s.is_current"
+                            type="button"
+                            class="btn-danger-outline"
+                            @click="kickSession(s)"
+                        >
+                            <Icon name="heroicon-o-arrow-right-on-rectangle" class="h-4 w-4" />
+                            踢掉
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ④ 注销账号 -->
         <div class="card">
             <div class="card-header">
                 <h3 class="font-semibold text-gray-900 dark:text-gray-100">注销账号</h3>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\Sessions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,32 @@ class ProfileController extends Controller
     {
         return view('profile.edit', [
             'user' => $request->user(),
+            'sessions' => Sessions::forUser($request->user()->id, $request->session()->getId()),
+            'sessionsSupported' => Sessions::databaseDriven(),
         ]);
+    }
+
+    /** 踢掉某一条登录设备（会话）；当前这条不可通过此入口删除，防止误操作 */
+    public function destroySession(Request $request, string $session): RedirectResponse
+    {
+        if ($session === $request->session()->getId()) {
+            return back()->with('error', '不能踢掉当前正在使用的会话；如需退出请直接登出。');
+        }
+
+        $kicked = Sessions::invalidate($request->user()->id, $session);
+
+        return back()->with(
+            $kicked ? 'success' : 'error',
+            $kicked ? '该设备已下线。' : '会话不存在或已下线。'
+        );
+    }
+
+    /** 踢掉其它全部登录设备，保留当前这条 */
+    public function destroyOtherSessions(Request $request): RedirectResponse
+    {
+        $kicked = Sessions::invalidateOthers($request->user()->id, $request->session()->getId());
+
+        return back()->with('success', "已踢掉其它 {$kicked} 台设备的会话。");
     }
 
     /**

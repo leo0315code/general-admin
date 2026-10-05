@@ -18,6 +18,11 @@
             'passwordUrl' => route('password.update'),
             'destroyUrl' => route('profile.destroy'),
             'verificationUrl' => route('verification.send'),
+            // 登录设备（仅本人可见）
+            'sessions' => $sessions,
+            'sessionsSupported' => $sessionsSupported,
+            'sessionsDestroyUrl' => route('profile.sessions.destroy', ['session' => '__ID__']),
+            'sessionsDestroyOthersUrl' => route('profile.sessions.destroy-others'),
             'errors' => [
                 'default' => $errors->getMessages(),
                 'updatePassword' => $errors->updatePassword->getMessages(),
